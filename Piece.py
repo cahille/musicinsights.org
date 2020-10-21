@@ -42,3 +42,9 @@ class Piece:
             self.voiceNoteStreams[voiceIndex] = music21.stream.Stream()
 
         return self.voiceNoteStreams[voiceIndex]
+
+    def getNumerator(self):
+        return self.stream.flat.timeSignature.numerator
+
+    def getDenominator(self):
+        return self.stream.flat.timeSignature.denominator
