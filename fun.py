@@ -24,7 +24,7 @@ FIGURED_BASS_MEASURE_NOTE = {
     1: "G", 2: "F#", 3: "E", 4: "D", 5: "B", 6: "C", 7: "D", 8: "G", 9: "G", 10: "F#", 11: "E", 12: "A", 13: "F#", 14: "G", 15: "A", 16: "D",
     17: "D", 18: "B", 19: "C", 20: "B", 21: "G", 22: "A", 23: "D", 24: "C", 25: "C", 26: "B", 27: "A", 28: "D", 29: "G", 30: "C", 31: "D", 32: "G",
 }
-MINIMUM_SNIPPET_LENGTH = 50
+MINIMUM_SNIPPET_LENGTH = 10
 MOVEMENTS = [
     Movement('Aria', 32, False, {1: 1, 2: 4, 3: 4, 4: 2, 5: 3, 6: 3}),
     Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}),
@@ -53,7 +53,7 @@ MOVEMENTS = [
     Movement('Variation 28', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
     Movement('Variation 30', 16, False, {1: 2, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4, 7: 4, 8: 1, 9: 1}),
 ]
-PART_COLORS = ["blue", "green", "orange", "purple", "gray", "yellow", "white"]
+PART_COLORS = ['blue', 'green', 'orange', 'purple', 'gray', 'yellow', 'white']
 VOICE_COLOR = {
     1: PART_COLORS[0],
     2: PART_COLORS[1],
@@ -113,13 +113,12 @@ def indexDeltas(index, piece):
 
             index[snippetString].append(
                 {
-                    "movement": piece.movement,
-                    "startingIndex": i,
-                    "snippet": snippet,
-                    "voice": voice,
+                    'movement': piece.movement,
+                    'startingIndex': i,
+                    'snippet': snippet,
+                    'voice': voice,
                 }
             )
-
 
 def beatInt(beat):
     pair = str(beat).split('/')
@@ -129,150 +128,137 @@ def beatInt(beat):
         return int(float(pair[0]) / float(pair[1]))
 
 
-def matchIncluded(matched, matchCandidateOne, matchCandidateTwo):
-    for matchCandidate in [matchCandidateOne, matchCandidateTwo]:
-        for match in matched:
-            if matchCandidate['voice'] != match['voice']:
-                continue
+def matchIncluded(matched, matchCandidate):
+    for match in matched:
+        if matchCandidate['voice'] != match['voice']:
+            continue
 
-            if match['i'] <= matchCandidate['i'] and match['j'] >= matchCandidate['j']:
-                return True
+        if match['i'] <= matchCandidate['startingIndex'] and match['j'] >= matchCandidate['startingIndex']:
+            return True
 
     return False
 
 
 def handleDeltas(piece, index):
     matches = {}
+    matched = []
 
     for voice in sorted(piece.deltas.keys()):
-        # if voice != 1:
-        #     continue
-
-        deltas = piece.deltas[voice]
         mainStream = piece.voiceNoteStreams[voice]
 
-        mainIndex = -1
+        for snippet in index.keys():
+            main = index[snippet][0]
 
-        matched = []
+            if matchIncluded(matched, main):
+                continue
 
-        while mainIndex < len(deltas) - MINIMUM_SNIPPET_LENGTH:
-            mainIndex = mainIndex + 1
-            print(f"mainIndex - {mainIndex}")
-            snippet = deltas[mainIndex: mainIndex + MINIMUM_SNIPPET_LENGTH]
-            snippetString = snippetToString(snippet)
+            for deltaIndex in range(1, len(index[snippet])):
+                child = index[snippet][deltaIndex]
 
-            if snippetString in index and len(index[snippetString]) > 1:
-                print(snippetString)
-                for child in sorted(index[snippetString], key=lambda x: (x['voice'], x['startingIndex'])):
-                    if (child["movement"] == piece.movement
-                            and child["voice"] == voice
-                            and child["startingIndex"] == mainIndex):
-                        continue
+                if child['movement'] != piece.movement:
+                    continue
 
-                    if child["movement"] != piece.movement:
-                        continue
+                if main['voice'] == child['voice']:
+                    continue
 
-                    # if child["startingIndex"] > mainIndex:
-                    #     continue
+                if matchIncluded(matched, child):
+                    continue
 
-                    lookAhead = 0
-                    mainCurrentIndex = mainIndex + MINIMUM_SNIPPET_LENGTH
-                    childCurrentIndex = child["startingIndex"] + MINIMUM_SNIPPET_LENGTH
+                childStream = piece.voiceNoteStreams[child['voice']]
 
-                    if child["voice"] in piece.voiceNoteStreams:
-                        childStream = piece.voiceNoteStreams[child["voice"]]
-                    else:
-                        childStream
+                mainStartingLoopIndex = main['startingIndex'] + MINIMUM_SNIPPET_LENGTH
+                childStartingLoopIndex = child['startingIndex'] + MINIMUM_SNIPPET_LENGTH
 
-                    # if (mainCurrentIndex + lookAhead) > len(mainStream) - 2 or (
-                    #         childCurrentIndex + lookAhead
-                    # ) > len(childStream) - 2:
-                    #     continue
+                mainLastNote = mainStream[mainStartingLoopIndex - 1]
+                childLastNote = childStream[childStartingLoopIndex - 1]
 
-                    mainLastOrdinal = MyNote.getNoteOrdinal(mainStream[mainCurrentIndex - 1])
-                    childLastOrdinal = MyNote.getNoteOrdinal(childStream[childCurrentIndex - 1])
+                for lookAhead in range(0, len(mainStream) - mainStartingLoopIndex):
+                    print(f"    lookahead - {lookAhead}")
 
-                    while (mainCurrentIndex + lookAhead) < len(mainStream) \
-                            and (childCurrentIndex + lookAhead) < len(childStream):
+                    thisMainIndex = mainStartingLoopIndex + lookAhead
+                    thisChildIndex = childStartingLoopIndex + lookAhead
 
-                        print(f"    lookahead - {lookAhead}")
-                        mainNote = mainStream[mainCurrentIndex + lookAhead]
-                        childNote = childStream[childCurrentIndex + lookAhead]
-                        mainThisOrdinal = MyNote.getNoteOrdinal(mainNote)
-                        childThisOrdinal = MyNote.getNoteOrdinal(childNote)
+                    mainNote = mainStream[thisMainIndex]
+                    childNote = childStream[thisChildIndex]
 
-                        mainDelta = mainThisOrdinal - mainLastOrdinal
-                        childDelta = childThisOrdinal - childLastOrdinal
+                    print(f"mainNote: {mainNote.nameWithOctave}")
+                    print(f"childNote: {childNote.nameWithOctave}")
 
-                        print(f"mainNote: {mainNote.nameWithOctave}")
-                        print(f"childNote: {childNote.nameWithOctave}")
+                    if ((thisMainIndex + 1) == len(mainStream)) or ((thisChildIndex + 1) == len(childStream)) \
+                            or (
+                            (MyNote.getNoteOrdinal(mainNote) - MyNote.getNoteOrdinal(mainLastNote)) != (MyNote.getNoteOrdinal(childNote) - MyNote.getNoteOrdinal(childLastNote))):
+                        matchCandidateOne = {'voice': voice, 'i': mainStartingLoopIndex, 'j': thisMainIndex - 1}
+                        matchCandidateTwo = {'voice': child['voice'], 'i': child['startingIndex'], 'j': thisChildIndex - 1}
 
-                        if mainDelta == childDelta:
-                            child
+                        matched.append(matchCandidateOne)
+                        matched.append(matchCandidateTwo)
+
+                        matchLength = MINIMUM_SNIPPET_LENGTH + lookAhead + 1
+
+                        # the -1 for endnotes is because this note didn't match
+                        mainStartNote = mainStream[main['startingIndex']]
+
+                        if ((thisMainIndex + 1) == len(mainStream)) or ((thisChildIndex + 1) == len(childStream)):
+                            mainEndNote = mainStream[thisMainIndex]
+                            childEndNote = childStream[thisChildIndex]
                         else:
-                            matchCandidateOne = {'voice': voice, 'i': mainIndex, 'j': mainIndex + MINIMUM_SNIPPET_LENGTH + lookAhead}
-                            matchCandidateTwo = {'voice': child['voice'], 'i': child["startingIndex"], 'j': child["startingIndex"] + MINIMUM_SNIPPET_LENGTH + lookAhead}
+                            mainEndNote = mainStream[thisMainIndex - 1]
+                            childEndNote = childStream[thisChildIndex - 1]
 
-                            if matchIncluded(matched, matchCandidateOne, matchCandidateTwo):
-                                break
-                            matched.append(matchCandidateOne)
-                            matched.append(matchCandidateTwo)
+                        childStartNote = childStream[child['startingIndex']]
 
-                            matchLength = MINIMUM_SNIPPET_LENGTH + lookAhead + 1
+                        mainPart = f"v{voice} {getMeasureBeatString(piece, mainStartNote)}-" + f"{getMeasureBeatString(piece, mainEndNote)}"
+                        childPart = f"v{child['voice']} {getMeasureBeatString(piece, childStartNote)}" + f"-{getMeasureBeatString(piece, childEndNote)}"
 
-                            # the -1 for endnotes is because this note didn't match
-                            mainStartNote = mainStream[mainIndex]
-                            mainEndNote = mainStream[mainIndex + MINIMUM_SNIPPET_LENGTH + lookAhead - 1]
+                        if childPart in matches:
+                            matchLetter = matches[childPart]['letter']
+                            matchLength = matches[childPart]['length']
+                        elif mainPart in matches:
+                            matchLetter = matches[mainPart]['letter']
+                            matchLength = matches[mainPart]['length']
+                        else:
+                            matchLetter = chr(ord('@') + int(len(matches) / 2) + 1)
+                            thisMatch = {'letter': matchLetter, 'length': matchLength}
+                            matches[mainPart] = thisMatch
+                            matches[childPart] = thisMatch
 
-                            childStartNote = childStream[child['startingIndex']]
-                            childEndNote = childStream[child['startingIndex'] + MINIMUM_SNIPPET_LENGTH + lookAhead - 1]
+                        mainStartNote.articulations.append(MARK_IN)
+                        childStartNote.articulations.append(MARK_IN)
 
-                            mainPart = f"v{voice} {getMeasureBeatString(piece, mainStartNote.offset)}-" + f"{getMeasureBeatString(piece, mainEndNote.offset)}"
-                            childPart = f"v{child['voice']} {getMeasureBeatString(piece, childStartNote.offset)}" + f"-{getMeasureBeatString(piece, childEndNote.offset)}"
+                        if mainEndNote.articulations == None or (len(mainEndNote.articulations) == 0) or (
+                                len(mainEndNote.articulations) > 0 and mainEndNote.articulations[0] == MARK_IN):
+                            mainEndNote.articulations.append(MARK_OUT)
 
-                            if childPart in matches:
-                                matchLetter = matches[childPart]['letter']
-                                matchLength = matches[childPart]['length']
-                            elif mainPart in matches:
-                                matchLetter = matches[mainPart]['letter']
-                                matchLength = matches[mainPart]['length']
-                            else:
-                                matchLetter = chr(ord('@') + int(len(matches) / 2) + 1)
-                                thisMatch = {'letter': matchLetter, 'length': matchLength}
-                                matches[mainPart] = thisMatch
-                                matches[childPart] = thisMatch
+                        if childEndNote.articulations == None or (len(childEndNote.articulations) == 0) or (
+                                len(childEndNote.articulations) > 0 and childEndNote.articulations[0] == MARK_IN):
+                            childEndNote.articulations.append(MARK_OUT)
 
-                            lyric = f"[{matchLetter}: {matchLength} " + \
-                                    f"{childPart}, " + \
-                                    f"{mainPart}"
+                        addLyrics = True
+                        if addLyrics:
+                            mainLyric = f"[{matchLetter}: {matchLength} " + \
+                                        f"{mainPart}, " + \
+                                        f"{childPart}"
 
-                            mainStartNote.articulations.append(MARK_IN)
-                            childStartNote.articulations.append(MARK_IN)
-                            print(lyric)
+                            childLyric = f"[{matchLetter}: {matchLength} " + \
+                                         f"{childPart}, " + \
+                                         f"{mainPart}"
 
-                            if mainEndNote.articulations == None or (len(mainEndNote.articulations) == 0) or (
-                                    len(mainEndNote.articulations) > 0 and mainEndNote.articulations[0] == MARK_IN):
-                                mainEndNote.articulations.append(MARK_OUT)
+                            mainStartNote.addLyric(mainLyric)
+                            childStartNote.addLyric(childLyric)
+                            mainEndString = f"v{voice} {matchLetter}]"
+                            if mainEndNote.lyric == None or not mainEndString in mainEndNote.lyric:
+                                mainEndNote.addLyric(mainEndString)
 
-                            if childEndNote.articulations == None or (len(childEndNote.articulations) == 0) or (
-                                    len(childEndNote.articulations) > 0 and childEndNote.articulations[0] == MARK_IN):
-                                childEndNote.articulations.append(MARK_OUT)
+                            childEndString = f"v{child['voice']} {matchLetter}]"
+                            if childEndNote.lyric == None or not childEndString in childEndNote.lyric:
+                                childEndNote.addLyric(childEndString)
 
-                            addLyrics = True
-                            if addLyrics:
-                                childStartNote.addLyric(lyric)
-                                mainEndString = f"v{voice} {matchLetter}]"
-                                if mainEndNote.lyric == None or not mainEndString in mainEndNote.lyric:
-                                    mainEndNote.addLyric(mainEndString)
+                        break
+                    else:
+                        mainLastNote = mainNote
+                        childLastNote = childNote
 
-                                childEndString = f"v{child['voice']} {matchLetter}]"
-                                if childEndNote.lyric == None or not childEndString in childEndNote.lyric:
-                                    childEndNote.addLyric(childEndString)
-
-                            break
-
-                        lookAhead = lookAhead + 1
-
+                        continue
 
 def getMeasureBeat(numerator, denominator, offset):
     measureZeroBased = int(offset / (numerator / (denominator / 4)))
@@ -280,7 +266,14 @@ def getMeasureBeat(numerator, denominator, offset):
     return measureZeroBased + 1, beat + 1
 
 
-def getMeasureBeatString(piece, offset):
+def getMeasureBeatString(piece, note):
+    offset = None
+
+    for element in piece.stream.flat:
+        if element.id == note.id:
+            offset = element.getOffsetBySite(piece.stream.flat)
+            break
+
     measure, beat = getMeasureBeat(piece.getNumerator(), piece.getDenominator(), offset)
     return f"{measure}.{int(beat)}"
 
@@ -412,7 +405,7 @@ def ingestFile(path):
 
         part.insert(0, metadata.Metadata())
         part.metadata.movementName = f"part number {partNumber}"
-        # part.show()
+        part.show()
 
     for voiceIndex in voiceOffsetMap.keys():
         lastNote = None
@@ -503,28 +496,39 @@ def printDeltas(piece):
         print(deltaString)
 
 
+def trimIndex(index):
+    toDeletes = []
+    for snippet in index.keys():
+        if len(index[snippet]) < 2:
+            toDeletes.append((snippet))
+
+    for toDelete in toDeletes:
+        index.pop(toDelete)
+
+    for snippet in index.keys():
+        index[snippet].sort(key=lambda x: (x['voice'], x['startingIndex']))
+
+
 def walkDirectory(directory):
     corpus = {}
-    index = {}
 
     for file in getPaths(directory):
         path = directory + "/" + file
 
         movement = pathToMovement(path)
-        if not movement.name == 'Variation 3':
+        if not movement.name == 'Variation 12':
             continue
 
+        index = {}
         print(f"{path} -> {movement.name}")
         piece = ingestFile(path)
         indexDeltas(index, piece)
+        trimIndex(index)
+
         printDeltas(piece)
         corpus[movement] = piece
-
-    for movement in corpus:
-        piece = corpus[movement]
         handleDeltas(piece, index)
         writePath(piece.path, piece.stream)
-
 
 def writePath(path, stream):
     xmlPath = getOutPath(path, 'xml')
