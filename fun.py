@@ -4,12 +4,14 @@ from Delta import Delta
 import music21
 from music21 import *
 from Movement import Movement
+from music21.exceptions21 import Music21Exception
 from MyNote import MyNote
 import os
 from pathlib import Path
 from Piece import Piece
 import re
 import sys
+
 
 MARK_IN = articulations.StrongAccent()
 MARK_OUT = articulations.Accent()
@@ -27,7 +29,7 @@ FIGURED_BASS_MEASURE_NOTE = {
 MINIMUM_SNIPPET_LENGTH = 10
 MOVEMENTS = [
     Movement('Aria', 32, False, {1: 1, 2: 4, 3: 4, 4: 2, 5: 3, 6: 3}),
-    Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}),
+    Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}, '/Users/earlcahill/Desktop/movies/sync fun/02-variation 1.beats'),
     Movement('Variation 2', 32, True, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3}),
     Movement('Variation 3', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}),
     Movement('Variation 4', 32, True, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 3, 7: 4}),
@@ -260,21 +262,32 @@ def handleDeltas(piece, index):
 
                         continue
 
-def getMeasureBeat(numerator, denominator, offset):
-    measureZeroBased = int(offset / (numerator / (denominator / 4)))
-    beat = offset - (measureZeroBased * (numerator / (denominator / 4)))
+
+def getMeasureBeat(piece, offset):
+    measureZeroBased = int(offset / (piece.getNumerator() / (piece.getDenominator() / 4)))
+    beat = offset - (measureZeroBased * (piece.getNumerator() / (piece.getDenominator() / 4)))
     return measureZeroBased + 1, beat + 1
 
 
-def getMeasureBeatString(piece, note):
+def getOffset(piece, note):
     offset = None
-
-    for element in piece.stream.flat:
-        if element.id == note.id:
-            offset = element.getOffsetBySite(piece.stream.flat)
+    for candidate in piece.stream.flat:
+        if candidate.id == note.id:
+            offset = candidate.getOffsetBySite(piece.stream.flat)
             break
 
-    measure, beat = getMeasureBeat(piece.getNumerator(), piece.getDenominator(), offset)
+    return offset
+
+
+def getSyncBeat(piece, note):
+    offset = getOffset(piece, note)
+    measureZeroBased = int(offset / (piece.getNumerator() / (piece.getDenominator() / 4)))
+    beat = offset - (measureZeroBased * (piece.getNumerator() / (piece.getDenominator() / 4)))
+
+
+def getMeasureBeatString(piece, note):
+    offset = getOffset(piece, note)
+    measure, beat = getMeasureBeat(piece, offset)
     return f"{measure}.{int(beat)}"
 
 
@@ -318,16 +331,16 @@ def getFiguredBassMeasure(movement, beatsPerMeasure, measureNumber, beat):
     #     return 1
 
 
-def getFiguredBassNote(movement, numerator, denominator, offset):
-    measure, beat = getMeasureBeat(numerator, denominator, offset)
-    beatsPerMeasure = numerator / (denominator / 4)
-    figuredBassMeasure = getFiguredBassMeasure(movement, beatsPerMeasure, measure, beat)
+def getFiguredBassNote(piece, offset):
+    measure, beat = getMeasureBeat(piece, offset)
+    beatsPerMeasure = piece.getNumerator() / (piece.getDenominator() / 4)
+    figuredBassMeasure = getFiguredBassMeasure(piece.movement, beatsPerMeasure, measure, beat)
     return FIGURED_BASS_MEASURE_NOTE[figuredBassMeasure]
 
 
 def getOutPath(path, type):
-    path = path.replace("/musicxml-clean/", f"/xml-out/")
-    path = path.replace(".musicxml$", f".{type}")
+    path = path.replace("/musicxml-clean/", f"/{type}-out/")
+    path = path.replace(".musicxml", f".{type}")
 
     pathObject = Path(path)
 
@@ -405,7 +418,7 @@ def ingestFile(path):
 
         part.insert(0, metadata.Metadata())
         part.metadata.movementName = f"part number {partNumber}"
-        part.show()
+        # part.show()
 
     for voiceIndex in voiceOffsetMap.keys():
         lastNote = None
@@ -424,13 +437,9 @@ def ingestFile(path):
                 if note.tie and note.tie.type != 'start':
                     continue
 
-                measure, beat = getMeasureBeat(
-                    stream.flat.timeSignature.numerator,
-                    stream.flat.timeSignature.denominator,
-                    totalOffset
-                )
+                measure, beat = getMeasureBeat(piece, totalOffset)
 
-                handleFiguredBass(piece, stream.flat.timeSignature.numerator, stream.flat.timeSignature.denominator, totalOffset, note, measure, beat)
+                handleFiguredBass(piece, totalOffset, note, measure, beat)
 
                 myNote = MyNote(note)
                 pieceVoice.append(myNote)
@@ -452,11 +461,9 @@ def ingestFile(path):
     return piece
 
 
-def handleFiguredBass(piece, numerator, denominator, totalOffset, note, measure, beat):
-    figuredBassNote = getFiguredBassNote(
-        piece.movement, numerator, denominator, totalOffset
-    )
-    if False and note.name == figuredBassNote:
+def handleFiguredBass(piece, totalOffset, note, measure, beat):
+    figuredBassNote = getFiguredBassNote(piece, totalOffset)
+    if note.name == figuredBassNote:
         note.style.color = "gold"
         print(
             f"{measure} -> {beat} -> {figuredBassNote} -> {note.pitch.diatonicNoteNum}"
@@ -516,7 +523,7 @@ def walkDirectory(directory):
         path = directory + "/" + file
 
         movement = pathToMovement(path)
-        if not movement.name == 'Variation 12':
+        if not movement.name == 'Variation 1':
             continue
 
         index = {}
@@ -528,11 +535,68 @@ def walkDirectory(directory):
         printDeltas(piece)
         corpus[movement] = piece
         handleDeltas(piece, index)
-        writePath(piece.path, piece.stream)
+        formSyncedMidi(piece)
+        writeSyncedMidi(piece)
+        writeXml(piece)
 
-def writePath(path, stream):
-    xmlPath = getOutPath(path, 'xml')
-    fp = stream.write("musicxml", fp=xmlPath)
+
+def formSyncedMidi(piece):
+    if piece.movement.beatDurations == None or len(piece.movement.beatDurations) == 0:
+        return
+
+    goods = 0
+    duds = 0
+
+    totalNotes = {}
+    totalSeconds = {}
+
+    for candidate in piece.stream.recurse():
+        if "isNote" in dir(candidate) or "isRest" in dir(candidate):
+            offset = int(getOffset(piece, candidate))
+            performanceBeatDuration = piece.movement.beatDurations[offset]
+
+            try:
+                beforeSeconds = candidate.seconds
+                afterSeconds = performanceBeatDuration * candidate.duration.quarterLength
+
+                if offset not in totalSeconds:
+                    totalNotes[offset] = 0
+                    totalSeconds[offset] = 0
+
+                totalNotes[offset] += 1
+                totalSeconds[offset] += afterSeconds
+
+                candidate.seconds = afterSeconds
+                print(f"seconds -> {beforeSeconds} -> {afterSeconds}")
+                if "isRest" not in dir(candidate):
+                    print(f"{offset} -> {candidate.nameWithOctave} -> {afterSeconds}")
+                goods += 1
+            except Music21Exception:
+                candidate
+                duds += 1
+
+    totalDiff = 0
+    totalBeatDurations = 0
+    totalTotalSecodns = 0
+    for i in range(0, len(piece.movement.beatDurations)):
+        thisDiff = piece.movement.beatDurations[i] - totalSeconds[i] / 2
+        totalBeatDurations += piece.movement.beatDurations[i]
+        totalTotalSecodns += totalSeconds[i]
+        totalDiff += thisDiff
+        print(f"{i} {piece.movement.beatDurations[i]} -> {totalSeconds[i]} -> {thisDiff}")
+    print(f"{totalDiff=}")
+    duds
+
+
+def writeSyncedMidi(piece):
+    midiPath = getOutPath(piece.path, 'midi')
+    fp = piece.stream.write("midi", fp=midiPath)
+    print(f"{midiPath} was written")
+
+
+def writeXml(piece):
+    xmlPath = getOutPath(piece.path, 'musicxml')
+    fp = piece.stream.write("musicxml", fp=xmlPath)
     print(f"{xmlPath} was written")
 
 
