@@ -26,36 +26,88 @@ FIGURED_BASS_MEASURE_NOTE = {
     1: "G", 2: "F#", 3: "E", 4: "D", 5: "B", 6: "C", 7: "D", 8: "G", 9: "G", 10: "F#", 11: "E", 12: "A", 13: "F#", 14: "G", 15: "A", 16: "D",
     17: "D", 18: "B", 19: "C", 20: "B", 21: "G", 22: "A", 23: "D", 24: "C", 25: "C", 26: "B", 27: "A", 28: "D", 29: "G", 30: "C", 31: "D", 32: "G",
 }
-MINIMUM_SNIPPET_LENGTH = 10
+MINIMUM_SNIPPET_LENGTH = 5
+PART_COLORS = ['blue', 'green', 'orange', 'purple', 'gray', 'yellow', 'white']
 MOVEMENTS = [
-    Movement('Aria', 32, False, {1: 1, 2: 4, 3: 4, 4: 2, 5: 3, 6: 3}),
-    Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}, '/Users/earlcahill/Desktop/movies/sync fun/02-variation 1.beats'),
-    Movement('Variation 2', 32, True, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3}),
+    Movement('Aria', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4}),
+    # Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}, '/Users/earlcahill/Desktop/movies/sync fun/02-variation 1.beats'),
+    Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 1, 4: 2, 5: 2}),
+    Movement('Variation 2', 32, True, {1: 1, 2: 2, 3: 3, 4: 3}),
     Movement('Variation 3', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}),
     Movement('Variation 4', 32, True, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 3, 7: 4}),
     Movement('Variation 5', 32, False, {1: 1, 2: 2, 3: 2}),
-    Movement('Variation 6', 32, True, {1: 2, 2: 1, 3: 3, 4: 3, 5: 3, 6: 3, 7: 3}),
+    Movement('Variation 6', 32, True, {1: 1, 2: 2, 3: 4, 4: 4, 5: 3, 6: 3, 7: 3, 8: 3}, partOffsetMap={
+        3: {1: [[33, 34.25]]},
+        5: {2: [[9, 11.75], [21, 22.5], [24, 24], [25.5, 25.5]]},
+        7: {2: [[12, 12]]}
+    }),
     Movement('Variation 7', 32, False, {1: 1, 2: 2}),
     Movement('Variation 8', 32, False, {1: 1, 2: 2}),
     Movement('Variation 9', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}),
-    Movement('Variation 10', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4, 7: 4}),
+    Movement('Variation 10', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4}, partOffsetMap={
+        3: {3: [[16, 38], [44, 62], [112, 126]]},
+        4: {3: [[24, 27], [32, 34], [40, 42]]}
+    }),
     Movement('Variation 11', 32, False, {1: 1, 2: 2, 3: 2, 4: 2}),
-    Movement('Variation 12', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 3, 7: 3}),  # darn part 5 mixes voices 2 and 3 :(
-    Movement('Variation 13', 32, False, {1: 1, 2: 3, 3: 3, 4: 2, 5: 4, 6: 4}),
+    Movement('Variation 12', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2, 6: 3, 7: 3}, partOffsetMap={
+        5: {3: [[12, 14], [30, 32.5], [39, 47], [60.5, 72], [75, 83.75]]}
+    }),
+    Movement('Variation 13', 32, False, {1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4}, partOffsetMap={
+        4: {2: [[13, 13]]}
+    }),
     Movement('Variation 14', 32, False, {1: 1, 2: 2}),
-    Movement('Variation 15', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}),
+    Movement('Variation 15', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}, partOffsetMap={
+        4: {2: [[4, 7.25], [12, 13.875], [24.5, 27.25], [28.5, 29.75], [52, 53.5], [60, 62]]},
+        5: {2: [[14, 14], [54, 54.5]]}
+    }),
+    Movement('Variation 16', 48, True, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4}, partOffsetMap={
+        3: {3: [[117.5, 117.5]]},
+        4: {3: [[0, 0], [3.75, 4], [53.75, 54]]}
+    }),
     Movement('Variation 17', 32, False, {1: 1, 2: 2}),
-    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 2, 4: 3}),
-    Movement('Variation 19', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}),
+    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}),
+    Movement('Variation 19', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}, partOffsetMap={
+        4: {2: [[24, 24.5], [42, 47]]},
+        5: {2: [[25.5, 25.5]]}
+    }),
     Movement('Variation 20', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}),
-    Movement('Variation 21', 16, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3}),
-    Movement('Variation 22', 32, False, {1: 2, 2: 2, 3: 3, 4: 3, 5: 4, 6: 4}),
-    Movement('Variation 23', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 4}),
+    Movement('Variation 21', 16, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3, 7: 3}, partOffsetMap={
+        4: {2: [[0, 7.5], [20, 23.5], [60.75, 62]]},
+        5: {2: [[43, 45], [48.25, 49.75]]},
+    }),
+    Movement('Variation 22', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4}, partOffsetMap={
+        # 3: {3: [[34, 44], [50, 60], [78, 92], [98, 104], [112, 112]],
+        #     4: [[68, 75], [96, 103]]},
+        3: {3: [[34, 44], [50, 60], [78, 78], [84, 92], [106, 111], [116, 124]],
+            4: [[68, 75], [96, 103]]},  # , [64, 112], [116, 124]]},
+        4: {4: [[32, 56], [64, 110], [116, 118], [124, 124]]},  # , [64, 112], [116, 124]]},
+        5: {3: [[80, 83]]},
+    }),
+    Movement('Variation 23', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}, partOffsetMap={
+        3: {3: [[54.25, 57.5]]},
+        4: {3: [[73.25, 95], [48.25, 51.5]]},
+    }),
+    Movement('Variation 24', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4}, partOffsetMap={
+        3: {2: [[15, 17.5]]},
+        4: {2: [[9, 13], [45, 51], [63, 66], [63, 95.5], [117, 121], [126.5, 143]]},
+        5: {2: [[13, 13.5], [54, 56.5], [67.5, 67.5], [122, 124.5]]},
+        6: {4: [[54, 58]]}
+    }),
+    Movement('Variation 25', 32, True, {1: 1, 2: 3, 3: 4, 4: 3, 5: 4}),
+    # Movement('Variation 26', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
     Movement('Variation 27', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
-    Movement('Variation 28', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
-    Movement('Variation 30', 16, False, {1: 2, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4, 7: 4, 8: 1, 9: 1}),
+    Movement('Variation 28', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 4}, partOffsetMap={
+        3: {3: [[18.125, 23.875], [36.125, 44.875], [60.125, 68.875], [36.125, 44.875], [60.125, 68.875], [72.125, 77.875]]},
+        4: {4: [[18, 77]]},
+    }),
+    Movement('Variation 29', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}, partOffsetMap={
+        2: {4: [[24, 56], [84, 90]]},
+        3: {1: [[36, 48], [45.75, 46.75], [54, 60], [72, 78]]},
+        4: {4: [[39, 45], [54, 60]]}
+    }),
+    Movement('Variation 30', 16, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4}),
+    Movement('Aria da capo', 32, False, {1: 2, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4, 7: 4, 8: 1, 9: 1}),
 ]
-PART_COLORS = ['blue', 'green', 'orange', 'purple', 'gray', 'yellow', 'white']
 VOICE_COLOR = {
     1: PART_COLORS[0],
     2: PART_COLORS[1],
@@ -64,7 +116,14 @@ VOICE_COLOR = {
 }
 
 
-def getVoice(movement, part):
+def getVoice(movement, part, totalOffset):
+    if part in movement.partOffsetMap:
+        for voiceCandidate in movement.partOffsetMap[part].keys():
+            for thisRange in movement.partOffsetMap[part][voiceCandidate]:
+                if totalOffset >= thisRange[0] and totalOffset <= thisRange[1]:
+                    return voiceCandidate
+
+    print(f"p{part} -> {totalOffset}")
     if part in movement.partVoiceMap:
         return movement.partVoiceMap[part]
 
@@ -74,7 +133,7 @@ def getVoice(movement, part):
 def getVoiceColor(movement, voice):
     voiceMap = {
         2: {2: 4},
-        3: {3: 4}
+        3: {3: 4},
     }
 
     if movement.voices in voiceMap and voice in voiceMap[movement.voices]:
@@ -83,6 +142,9 @@ def getVoiceColor(movement, voice):
     if voice:
         if voice in VOICE_COLOR:
             return VOICE_COLOR[voice]
+
+    if voice == None:
+        voice = 1
 
     if len(PART_COLORS) >= (voice - 1):
         return PART_COLORS[voice - 1]
@@ -157,8 +219,8 @@ def handleDeltas(piece, index):
             for deltaIndex in range(1, len(index[snippet])):
                 child = index[snippet][deltaIndex]
 
-                if child['movement'] != piece.movement:
-                    continue
+                # if child['movement'] != piece.movement:
+                #     continue
 
                 if main['voice'] == child['voice']:
                     continue
@@ -237,23 +299,29 @@ def handleDeltas(piece, index):
 
                         addLyrics = True
                         if addLyrics:
+                            movementReference = ''
+                            if child['movement'] != piece.movement:
+                                movementReference = f"{child['movement']}: "
+
                             mainLyric = f"[{matchLetter}: {matchLength} " + \
                                         f"{mainPart}, " + \
-                                        f"{childPart}"
-
-                            childLyric = f"[{matchLetter}: {matchLength} " + \
-                                         f"{childPart}, " + \
-                                         f"{mainPart}"
+                                        f"{movementReference}{childPart}"
 
                             mainStartNote.addLyric(mainLyric)
-                            childStartNote.addLyric(childLyric)
                             mainEndString = f"v{voice} {matchLetter}]"
                             if mainEndNote.lyric == None or not mainEndString in mainEndNote.lyric:
                                 mainEndNote.addLyric(mainEndString)
 
-                            childEndString = f"v{child['voice']} {matchLetter}]"
-                            if childEndNote.lyric == None or not childEndString in childEndNote.lyric:
-                                childEndNote.addLyric(childEndString)
+                            if child['movement'] == piece.movement:
+                                childLyric = f"[{matchLetter}: {matchLength} " + \
+                                             f"{childPart}, " + \
+                                             f"{mainPart}"
+
+                                childStartNote.addLyric(childLyric)
+
+                                childEndString = f"v{child['voice']} {matchLetter}]"
+                                if childEndNote.lyric == None or not childEndString in childEndNote.lyric:
+                                    childEndNote.addLyric(childEndString)
 
                         break
                     else:
@@ -301,6 +369,14 @@ def getFiguredBassMeasure(movement, beatsPerMeasure, measureNumber, beat):
     # 22 - weird
 
     if movement.voltaRepeats:
+        if movement.name.endswith('25'):
+            measureMap = {
+                34: 31,
+                35: 32
+            }
+            if measureNumber in measureMap:
+                return measureMap[measureNumber]
+
         if measureNumber >= 1 and measureNumber <= 16:
             return measureNumber
         if measureNumber >= 17 and measureNumber <= 33:
@@ -335,6 +411,10 @@ def getFiguredBassNote(piece, offset):
     measure, beat = getMeasureBeat(piece, offset)
     beatsPerMeasure = piece.getNumerator() / (piece.getDenominator() / 4)
     figuredBassMeasure = getFiguredBassMeasure(piece.movement, beatsPerMeasure, measure, beat)
+
+    if figuredBassMeasure not in FIGURED_BASS_MEASURE_NOTE:
+        figuredBassMeasure = 32
+
     return FIGURED_BASS_MEASURE_NOTE[figuredBassMeasure]
 
 
@@ -382,25 +462,76 @@ def ingestFile(path):
 
     piece = Piece(path, movement, stream)
 
+    return piece
+
+
+def colorFiguredBass(piece):
     partNumber = 0
 
-    voiceOffsetMap = {}
-
-    for part in stream.voicesToParts():
+    for part in piece.stream.voicesToParts():
         if not hasNote(part):
             continue
 
         partNumber = partNumber + 1
-        voiceIndex = getVoice(movement, partNumber)
-        voiceColor = getVoiceColor(movement, voiceIndex)
+        voiceIndex = getVoice(piece.movement, partNumber)
 
         for note in part.recurse():
             if "isRest" not in dir(note) and "isNote" not in dir(note):
                 continue
 
-            note.style.color = voiceColor
+            totalOffset = note.getOffsetInHierarchy(piece.stream)
+            measure, beat = getMeasureBeat(piece, totalOffset)
+            handleFiguredBassNote(piece, voiceIndex, totalOffset, note, measure)
 
-            totalOffset = note.getOffsetInHierarchy(stream)
+    print(f"figured bass report for {piece.movement.name}")
+
+    piece.figuredBassReports['matchingMeasures'] = 0
+    piece.figuredBassReports['matchingNotes'] = 0
+    piece.figuredBassReports['missingMeasures'] = []
+
+    for measure in range(1, 33):
+        if measure in piece.figuredBassReports['counts']:
+            for voiceIndex in piece.figuredBassReports['counts'][measure].keys():
+                count = piece.figuredBassReports['counts'][measure][voiceIndex]
+                piece.figuredBassReports['matchingMeasures'] += 1
+                piece.figuredBassReports['matchingNotes'] += count
+        else:
+            count = 0
+            piece.figuredBassReports['missingMeasures'].append(measure)
+
+        print(f" -> {measure} -> {count}")
+    print(f" -> {piece.figuredBassReports['matchingMeasures']} matching measures")
+    print(f" -> {piece.figuredBassReports['matchingNotes']} matching notes")
+    print(f" -> {piece.figuredBassReports['missingMeasures']} missing measures\n")
+
+
+def colorParts(piece):
+    partNumber = 0
+
+    voiceOffsetMap = {}
+
+    for part in piece.stream.voicesToParts():
+        if not hasNote(part):
+            continue
+
+        partNumber = partNumber + 1
+
+        for note in part.recurse():
+            if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
+                continue
+
+            if "isRest" in dir(note) and note.isRest:
+                note.style.color = 'black'
+                continue
+
+            totalOffset = note.getOffsetInHierarchy(piece.stream)
+            voiceIndex = getVoice(piece.movement, partNumber, totalOffset)
+            voiceColor = getVoiceColor(piece.movement, voiceIndex)
+
+            notes = note.notes if note.isChord else [note]
+
+            for thisNote in notes:
+                thisNote.style.color = voiceColor
 
             if voiceIndex not in voiceOffsetMap:
                 voiceOffsetMap[voiceIndex] = {}
@@ -409,16 +540,13 @@ def ingestFile(path):
             if totalOffset in voiceOffsetMap[voiceIndex]:
                 # and the something is a note
                 if "isNote" in dir(voiceOffsetMap[voiceIndex][totalOffset]):
-                    # and this is a rest, then skip this
-                    if "isRest" in dir(note):
-                        continue
                     print("hmm")
 
             voiceOffsetMap[voiceIndex][totalOffset] = note
 
         part.insert(0, metadata.Metadata())
         part.metadata.movementName = f"part number {partNumber}"
-        # part.show()
+        part.show()
 
     for voiceIndex in voiceOffsetMap.keys():
         lastNote = None
@@ -439,8 +567,6 @@ def ingestFile(path):
 
                 measure, beat = getMeasureBeat(piece, totalOffset)
 
-                handleFiguredBass(piece, totalOffset, note, measure, beat)
-
                 myNote = MyNote(note)
                 pieceVoice.append(myNote)
                 if lastNote:
@@ -451,7 +577,7 @@ def ingestFile(path):
                     )
 
                 print(
-                    f"{voiceIndex} -> {measure} -> {beat} -> {totalOffset} -> {note.nameWithOctave} -> {myNote.noteOrdinal} -> {note.style.color}"
+                    f"v{voiceIndex} -> {measure} -> {beat} -> {totalOffset} -> {note.nameWithOctave} -> {myNote.noteOrdinal} -> {note.style.color}"
                 )
                 voiceStream.append(note)
                 voiceNoteStream.append(note)
@@ -461,20 +587,43 @@ def ingestFile(path):
     return piece
 
 
-def handleFiguredBass(piece, totalOffset, note, measure, beat):
+def colorFiguredBassNote(piece, voiceIndex, measure, note):
+    note.style.color = "gold"
+
+    if measure not in piece.figuredBassReports['counts']:
+        piece.figuredBassReports['counts'][measure] = {}
+
+    if voiceIndex not in piece.figuredBassReports['counts'][measure]:
+        piece.figuredBassReports['counts'][measure][voiceIndex] = 0
+
+    piece.figuredBassReports['counts'][measure][voiceIndex] += 1
+
+    print(
+        f"{measure} -> {note.name}"
+    )
+
+
+def handleFiguredBassNote(piece, voiceIndex, totalOffset, note, measure):
+    if voiceIndex < 3:
+        return
+
     figuredBassNote = getFiguredBassNote(piece, totalOffset)
+    if note.isChord:
+        for thisNote in note.notes:
+            if thisNote.name == figuredBassNote:
+                colorFiguredBassNote(piece, voiceIndex, measure, thisNote)
+
+        return
+
     if note.name == figuredBassNote:
-        note.style.color = "gold"
-        print(
-            f"{measure} -> {beat} -> {figuredBassNote} -> {note.pitch.diatonicNoteNum}"
-        )
+        colorFiguredBassNote(piece, voiceIndex, measure, note)
 
 
 def getPaths(directory):
     paths = []
 
     for candidate in os.listdir(directory):
-        if candidate.endswith(".musicxml"):
+        if candidate.endswith(".musicxml") or candidate.endswith(".mxl"):
             paths.append(candidate)
 
     paths.sort()
@@ -516,28 +665,6 @@ def trimIndex(index):
         index[snippet].sort(key=lambda x: (x['voice'], x['startingIndex']))
 
 
-def walkDirectory(directory):
-    corpus = {}
-
-    for file in getPaths(directory):
-        path = directory + "/" + file
-
-        movement = pathToMovement(path)
-        if not movement.name == 'Variation 1':
-            continue
-
-        index = {}
-        print(f"{path} -> {movement.name}")
-        piece = ingestFile(path)
-        indexDeltas(index, piece)
-        trimIndex(index)
-
-        printDeltas(piece)
-        corpus[movement] = piece
-        handleDeltas(piece, index)
-        formSyncedMidi(piece)
-        writeSyncedMidi(piece)
-        writeXml(piece)
 
 
 def formSyncedMidi(piece):
@@ -596,8 +723,67 @@ def writeSyncedMidi(piece):
 
 def writeXml(piece):
     xmlPath = getOutPath(piece.path, 'musicxml')
+    piece.stream.definesExplicitPageBreaks = False
+    piece.stream.definesExplicitSystemBreaks = False
     fp = piece.stream.write("musicxml", fp=xmlPath)
     print(f"{xmlPath} was written")
+
+
+def walkDirectory(directory):
+    index = {}
+
+    withDeltas = False
+    shouldColorFiguredBass = False
+    shouldColorParts = True
+
+    pieces = []
+    for file in getPaths(directory):
+        path = directory + "/" + file
+        movement = pathToMovement(path)
+
+        if not movement.name == 'Variation 29':
+            continue
+
+        print(f"{path} -> {movement.name}")
+        piece = ingestFile(path)
+        if withDeltas:
+            indexDeltas(index, piece)
+
+        pieces.append(piece)
+
+    trimIndex(index)
+
+    for piece in pieces:
+        if shouldColorFiguredBass:
+            colorFiguredBass(piece)
+            path = piece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
+            piece.stream.definesExplicitPageBreaks = True
+            piece.stream.definesExplicitSystemBreaks = True
+            fp = piece.stream.write("musicxml", fp=path)
+            print(f"{path} was written")
+
+        if shouldColorParts:
+            colorParts(piece)
+            path = piece.path.replace("musicxml-clean", "musicxml-out/colored-parts")
+            piece.stream.definesExplicitPageBreaks = True
+            piece.stream.definesExplicitSystemBreaks = True
+            fp = piece.stream.write("musicxml", fp=path)
+            print(f"{path} was written")
+
+    for file in getPaths(directory):
+        printDeltas(piece)
+        handleDeltas(piece, index)
+        # formSyncedMidi(piece)
+        # writeSyncedMidi(piece)
+
+        # versions
+        # all black
+        # all black - gold figured bass
+        # colored voices - no extra figured bass colors
+        # colored voices - colored figured bass
+        # colored voice - colored figured bass - with lyrics for patterns
+
+        writeXml(piece)
 
 
 walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean")

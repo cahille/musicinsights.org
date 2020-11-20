@@ -26,7 +26,7 @@ class MyNote:
                 ["G#", "A-"],
                 ["A"],
                 ["A#", "B-"],
-                ["B"],
+                ["B", "C-"],
             ]:
                 for note in note_list:
                     noteOrdinals[f"{note}{octave}"] = noteOrdinal

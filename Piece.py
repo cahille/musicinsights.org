@@ -2,13 +2,13 @@ import music21
 
 
 class Piece:
+    deltas = None
     path = None
     movement = None
     stream = None
-    deltas = None
+    voiceNoteStreams = None
     voices = None
     voiceStreams = None
-    voiceNoteStreams = None
 
     def __init__(self, path, movement, stream):
         self.path = path
@@ -18,6 +18,9 @@ class Piece:
         self.voices = {}
         self.voiceStreams = {}
         self.voiceNoteStreams = {}
+        self.figuredBassReports = {
+            'counts' : {}
+        }
 
     def getVoice(self, voiceIndex):
         if voiceIndex not in self.voices:

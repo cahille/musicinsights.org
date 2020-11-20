@@ -1,9 +1,10 @@
 class Movement:
-    def __init__(self, name, measures, voltaRepeats, partVoiceMap, beatsPath=None):
+    def __init__(self, name, measures, voltaRepeats, partVoiceMap, beatsPath=None, partOffsetMap={}):
         self.name = name
         self.measures = measures
         self.voltaRepeats = voltaRepeats
         self.partVoiceMap = partVoiceMap
+        self.partOffsetMap = partOffsetMap
 
         if beatsPath != None:
             self.beatDurations = []
