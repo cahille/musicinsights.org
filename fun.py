@@ -27,9 +27,16 @@ FIGURED_BASS_MEASURE_NOTE = {
     17: "D", 18: "B", 19: "C", 20: "B", 21: "G", 22: "A", 23: "D", 24: "C", 25: "C", 26: "B", 27: "A", 28: "D", 29: "G", 30: "C", 31: "D", 32: "G",
 }
 MINIMUM_SNIPPET_LENGTH = 5
-PART_COLORS = ['blue', 'green', 'orange', 'purple', 'gray', 'yellow', 'white']
+COLORS = ['blue', 'green', 'orange', 'purple', 'gray', 'yellow', 'white']
 MOVEMENTS = [
-    Movement('Aria', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4}),
+    Movement('Aria', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4}, partOffsetMap={
+        4: {2: [[57, 60]],
+            3: [[69, 69]],
+            4: [[84, 95]]},
+        5: {2: [[2, 2], [18.5, 20.75], [27, 27], [46, 47.5], [54.5, 56.5], [78, 79]],
+            4: [[21, 24], [30, 35.5], [42, 42], [52, 52], [48, 53], [57, 75], [81, 83.5]]},
+        6: {3: [[1, 1], [68.5, 68.5]]}
+    }),
     # Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}, '/Users/earlcahill/Desktop/movies/sync fun/02-variation 1.beats'),
     Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 1, 4: 2, 5: 2}),
     Movement('Variation 2', 32, True, {1: 1, 2: 2, 3: 3, 4: 3}),
@@ -109,50 +116,37 @@ MOVEMENTS = [
     Movement('Aria da capo', 32, False, {1: 2, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4, 7: 4, 8: 1, 9: 1}),
 ]
 VOICE_COLOR = {
-    1: PART_COLORS[0],
-    2: PART_COLORS[1],
-    3: PART_COLORS[2],
-    4: PART_COLORS[3],
+    1: COLORS[0],
+    2: COLORS[1],
+    3: COLORS[2],
+    4: COLORS[3],
 }
 
 
-def getVoice(movement, part, totalOffset):
+def getVoiceIndex(movement, part, totalOffset):
     if part in movement.partOffsetMap:
         for voiceCandidate in movement.partOffsetMap[part].keys():
             for thisRange in movement.partOffsetMap[part][voiceCandidate]:
                 if totalOffset >= thisRange[0] and totalOffset <= thisRange[1]:
                     return voiceCandidate
 
-    print(f"p{part} -> {totalOffset}")
     if part in movement.partVoiceMap:
         return movement.partVoiceMap[part]
 
     return None
 
 
-def getVoiceColor(movement, voice):
-    voiceMap = {
-        2: {2: 4},
-        3: {3: 4},
-    }
+def getVoiceColor(voice):
+    if voice in VOICE_COLOR:
+        return VOICE_COLOR[voice]
 
-    if movement.voices in voiceMap and voice in voiceMap[movement.voices]:
-        voice = voiceMap[movement.voices][voice]
-
-    if voice:
-        if voice in VOICE_COLOR:
-            return VOICE_COLOR[voice]
-
-    if voice == None:
-        voice = 1
-
-    if len(PART_COLORS) >= (voice - 1):
-        return PART_COLORS[voice - 1]
+    if len(COLORS) >= (voice - 1):
+        return COLORS[voice - 1]
     else:
         return "gray"
 
 
-def openMidi(path):
+def openMusicFile(path):
     stream = converter.parse(path)
     stream.insert(0, metadata.Metadata())
     stream.metadata.composer = "Johann Sebastian Bach"
@@ -451,16 +445,16 @@ def pathToMovement(path):
 
 
 def ingestFile(path):
-    stream = openMidi(path)
+    thisStream = openMusicFile(path)
 
     movement = pathToMovement(path)
 
     # setting time signatures to all parts to the time signature of the 0th
-    for i in range(1, len(stream.parts)):
-        if not stream.parts[i].timeSignature:
-            stream.parts[i].timeSignature = stream.parts[0].timeSignature
+    for i in range(1, len(thisStream.parts)):
+        if not thisStream.parts[i].timeSignature:
+            thisStream.parts[i].timeSignature = thisStream.parts[0].measure(1).timeSignature
 
-    piece = Piece(path, movement, stream)
+    piece = Piece(path, movement, thisStream)
 
     return piece
 
@@ -473,13 +467,13 @@ def colorFiguredBass(piece):
             continue
 
         partNumber = partNumber + 1
-        voiceIndex = getVoice(piece.movement, partNumber)
 
         for note in part.recurse():
             if "isRest" not in dir(note) and "isNote" not in dir(note):
                 continue
 
             totalOffset = note.getOffsetInHierarchy(piece.stream)
+            voiceIndex = getVoiceIndex(piece.movement, partNumber, totalOffset)
             measure, beat = getMeasureBeat(piece, totalOffset)
             handleFiguredBassNote(piece, voiceIndex, totalOffset, note, measure)
 
@@ -505,7 +499,7 @@ def colorFiguredBass(piece):
     print(f" -> {piece.figuredBassReports['missingMeasures']} missing measures\n")
 
 
-def colorParts(piece):
+def handlePartsVoices(piece):
     partNumber = 0
 
     voiceOffsetMap = {}
@@ -514,27 +508,35 @@ def colorParts(piece):
         if not hasNote(part):
             continue
 
-        partNumber = partNumber + 1
+        partNumber += 1
+
+        part.insert(0, metadata.Metadata())
+        part.metadata.movementName = f"part number {partNumber}"
+        part.show()
 
         for note in part.recurse():
             if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
                 continue
 
-            if "isRest" in dir(note) and note.isRest:
-                note.style.color = 'black'
-                continue
-
             totalOffset = note.getOffsetInHierarchy(piece.stream)
-            voiceIndex = getVoice(piece.movement, partNumber, totalOffset)
-            voiceColor = getVoiceColor(piece.movement, voiceIndex)
+            voiceIndex = getVoiceIndex(piece.movement, partNumber, totalOffset)
 
-            notes = note.notes if note.isChord else [note]
+            if "isChord" in (dir(note)) and note.isChord:
+                if voiceIndex == 1:
+                    note = note.notes[0]
+                elif voiceIndex == 4:
+                    note = note.notes[-1]
+                else:
+                    note
 
-            for thisNote in notes:
-                thisNote.style.color = voiceColor
+            if "isNote" in (dir(note)) and note.isNote:
+                print(f"p{partNumber} -> v{voiceIndex} -> {totalOffset} -> {note.nameWithOctave}")
 
             if voiceIndex not in voiceOffsetMap:
                 voiceOffsetMap[voiceIndex] = {}
+
+            if "isRest" in dir(note) and note.isRest:
+                continue
 
             # if something is already there
             if totalOffset in voiceOffsetMap[voiceIndex]:
@@ -544,10 +546,6 @@ def colorParts(piece):
 
             voiceOffsetMap[voiceIndex][totalOffset] = note
 
-        part.insert(0, metadata.Metadata())
-        part.metadata.movementName = f"part number {partNumber}"
-        part.show()
-
     for voiceIndex in voiceOffsetMap.keys():
         lastNote = None
 
@@ -555,8 +553,13 @@ def colorParts(piece):
         voiceNoteStream = piece.getVoiceNoteStream(voiceIndex)
 
         for totalOffset, note in sorted(voiceOffsetMap[voiceIndex].items()):
+            if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
+                continue
+
+            voiceStream.append(note)
+
             if "isRest" in dir(note) and note.isRest:
-                voiceStream.append(note)
+                continue
 
             if "isNote" in dir(note) and note.isNote:
                 pieceVoice = piece.getVoice(voiceIndex)
@@ -565,9 +568,15 @@ def colorParts(piece):
                 if note.tie and note.tie.type != 'start':
                     continue
 
-                measure, beat = getMeasureBeat(piece, totalOffset)
+                voiceNoteStream.append(note)
 
+                measure, beat = getMeasureBeat(piece, totalOffset)
                 myNote = MyNote(note)
+
+                print(
+                    f"v{voiceIndex} -> {measure} -> {beat} -> {totalOffset} -> {note.nameWithOctave} -> {myNote.noteOrdinal}"
+                )
+
                 pieceVoice.append(myNote)
                 if lastNote:
                     pieceDeltas.append(
@@ -576,15 +585,20 @@ def colorParts(piece):
                         )
                     )
 
-                print(
-                    f"v{voiceIndex} -> {measure} -> {beat} -> {totalOffset} -> {note.nameWithOctave} -> {myNote.noteOrdinal} -> {note.style.color}"
-                )
-                voiceStream.append(note)
-                voiceNoteStream.append(note)
-
                 lastNote = note
 
-    return piece
+
+def colorParts(piece):
+    for voiceIndex in piece.voiceStreams:
+        color = getVoiceColor(voiceIndex)
+
+        voiceStream = piece.voiceStreams[voiceIndex]
+
+        for note in voiceStream.recurse():
+            if "isNote" in dir(note) and note.isNote:
+                note.style.color = color
+            elif "isRest" in dir(note) and note.isRest:
+                note.style.color = 'black'
 
 
 def colorFiguredBassNote(piece, voiceIndex, measure, note):
@@ -623,7 +637,7 @@ def getPaths(directory):
     paths = []
 
     for candidate in os.listdir(directory):
-        if candidate.endswith(".musicxml") or candidate.endswith(".mxl"):
+        if candidate.endswith(".musicxml") or candidate.endswith(".mxl") or candidate.endswith(".xml"):
             paths.append(candidate)
 
     paths.sort()
@@ -733,6 +747,7 @@ def walkDirectory(directory):
     index = {}
 
     withDeltas = False
+    writeBlack = False
     shouldColorFiguredBass = False
     shouldColorParts = True
 
@@ -741,11 +756,29 @@ def walkDirectory(directory):
         path = directory + "/" + file
         movement = pathToMovement(path)
 
-        if not movement.name == 'Variation 29':
+        if not movement.name == 'Aria':
             continue
 
         print(f"{path} -> {movement.name}")
         piece = ingestFile(path)
+
+        handlePartsVoices(piece)
+
+        for voiceIndex in piece.voiceStreams:
+            voiceStream = piece.getVoiceStream(voiceIndex)
+            voiceNoteStream = piece.getVoiceNoteStream(voiceIndex)
+
+            voiceStream.timeSignature = piece.stream.parts[0].measure(1).timeSignature
+            voiceNoteStream.timeSignature = piece.stream.parts[0].measure(1).timeSignature
+
+            # voiceStream.insert(0, metadata.Metadata())
+            # voiceStream.metadata.movementName = f"voiceStream {voiceIndex=}"
+            # voiceStream.show()
+            #
+            # voiceNoteStream.insert(0, metadata.Metadata())
+            # voiceNoteStream.metadata.movementName = f"voiceNoteStream {voiceIndex=}"
+            # voiceNoteStream.show()
+
         if withDeltas:
             indexDeltas(index, piece)
 
@@ -754,19 +787,20 @@ def walkDirectory(directory):
     trimIndex(index)
 
     for piece in pieces:
-        if shouldColorFiguredBass:
-            colorFiguredBass(piece)
-            path = piece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
-            piece.stream.definesExplicitPageBreaks = True
-            piece.stream.definesExplicitSystemBreaks = True
+        if writeBlack:
+            path = piece.path.replace("musicxml-clean", "musicxml-out/black")
             fp = piece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
+
+        if shouldColorFiguredBass:
+            colorFiguredBass(piece)
+            # path = piece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
+            # fp = piece.stream.write("musicxml", fp=path)
+            # print(f"{path} was written")
 
         if shouldColorParts:
             colorParts(piece)
             path = piece.path.replace("musicxml-clean", "musicxml-out/colored-parts")
-            piece.stream.definesExplicitPageBreaks = True
-            piece.stream.definesExplicitSystemBreaks = True
             fp = piece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
