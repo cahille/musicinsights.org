@@ -6,9 +6,9 @@ class Piece:
     path = None
     movement = None
     stream = None
-    voiceNoteStreams = None
+    voiceNoteArrays = None
     voices = None
-    voiceStreams = None
+    voiceArrays = None
 
     def __init__(self, path, movement, stream):
         self.path = path
@@ -16,10 +16,10 @@ class Piece:
         self.stream = stream
         self.deltas = {}
         self.voices = {}
-        self.voiceStreams = {}
-        self.voiceNoteStreams = {}
+        self.voiceArrays = {}
+        self.voiceNoteArrays = {}
         self.figuredBassReports = {
-            'counts' : {}
+            'counts': {}
         }
 
     def getVoice(self, voiceIndex):
@@ -34,20 +34,25 @@ class Piece:
 
         return self.deltas[voiceIndex]
 
-    def getVoiceStream(self, voiceIndex):
-        if not voiceIndex in self.voiceStreams:
-            self.voiceStreams[voiceIndex] = music21.stream.Stream()
+    def getVoiceArray(self, voiceIndex):
+        if not voiceIndex in self.voiceArrays:
+            self.voiceArrays[voiceIndex] = []
 
-        return self.voiceStreams[voiceIndex]
+        return self.voiceArrays[voiceIndex]
 
-    def getVoiceNoteStream(self, voiceIndex):
-        if not voiceIndex in self.voiceNoteStreams:
-            self.voiceNoteStreams[voiceIndex] = music21.stream.Stream()
+    def getVoiceNoteArray(self, voiceIndex):
+        if not voiceIndex in self.voiceNoteArrays:
+            self.voiceNoteArrays[voiceIndex] = []
 
-        return self.voiceNoteStreams[voiceIndex]
+        return self.voiceNoteArrays[voiceIndex]
 
     def getNumerator(self):
         return self.stream.flat.timeSignature.numerator
 
     def getDenominator(self):
         return self.stream.flat.timeSignature.denominator
+
+    def backInBlack(self):
+        for element in self.stream.flat:
+            if "isNote" in dir(element):
+                element.style.color = 'black'

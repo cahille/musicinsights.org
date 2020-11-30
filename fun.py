@@ -26,7 +26,7 @@ FIGURED_BASS_MEASURE_NOTE = {
     1: "G", 2: "F#", 3: "E", 4: "D", 5: "B", 6: "C", 7: "D", 8: "G", 9: "G", 10: "F#", 11: "E", 12: "A", 13: "F#", 14: "G", 15: "A", 16: "D",
     17: "D", 18: "B", 19: "C", 20: "B", 21: "G", 22: "A", 23: "D", 24: "C", 25: "C", 26: "B", 27: "A", 28: "D", 29: "G", 30: "C", 31: "D", 32: "G",
 }
-MINIMUM_SNIPPET_LENGTH = 5
+MINIMUM_SNIPPET_LENGTH = 10
 COLORS = ['blue', 'green', 'orange', 'purple', 'gray', 'yellow', 'white']
 MOVEMENTS = [
     Movement('Aria', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 4, 7: 4}, partOffsetMap={
@@ -95,9 +95,10 @@ MOVEMENTS = [
         4: {3: [[73.25, 95], [48.25, 51.5]]},
     }),
     Movement('Variation 24', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4}, partOffsetMap={
+        1: {2: [[36, 44.5]]},
         3: {2: [[15, 17.5]]},
         4: {2: [[9, 13], [45, 51], [63, 66], [63, 95.5], [117, 121], [126.5, 143]]},
-        5: {2: [[13, 13.5], [54, 56.5], [67.5, 67.5], [122, 124.5]]},
+        5: {2: [[13.5, 13.5], [14.5, 14.5], [54, 56.5], [67.5, 67.5], [122, 124.5]]},
         6: {4: [[54, 58]]}
     }),
     Movement('Variation 25', 32, True, {1: 1, 2: 3, 3: 4, 4: 3, 5: 4}),
@@ -202,7 +203,7 @@ def handleDeltas(piece, index):
     matched = []
 
     for voice in sorted(piece.deltas.keys()):
-        mainStream = piece.voiceNoteStreams[voice]
+        mainStream = piece.voiceNoteArrays[voice]
 
         for snippet in index.keys():
             main = index[snippet][0]
@@ -222,7 +223,7 @@ def handleDeltas(piece, index):
                 if matchIncluded(matched, child):
                     continue
 
-                childStream = piece.voiceNoteStreams[child['voice']]
+                childStream = piece.voiceNoteArrays[child['voice']]
 
                 mainStartingLoopIndex = main['startingIndex'] + MINIMUM_SNIPPET_LENGTH
                 childStartingLoopIndex = child['startingIndex'] + MINIMUM_SNIPPET_LENGTH
@@ -231,7 +232,7 @@ def handleDeltas(piece, index):
                 childLastNote = childStream[childStartingLoopIndex - 1]
 
                 for lookAhead in range(0, len(mainStream) - mainStartingLoopIndex):
-                    print(f"    lookahead - {lookAhead}")
+                    # print(f"    lookahead - {lookAhead}")
 
                     thisMainIndex = mainStartingLoopIndex + lookAhead
                     thisChildIndex = childStartingLoopIndex + lookAhead
@@ -239,8 +240,8 @@ def handleDeltas(piece, index):
                     mainNote = mainStream[thisMainIndex]
                     childNote = childStream[thisChildIndex]
 
-                    print(f"mainNote: {mainNote.nameWithOctave}")
-                    print(f"childNote: {childNote.nameWithOctave}")
+                    # print(f"mainNote: {mainNote.nameWithOctave}")
+                    # print(f"childNote: {childNote.nameWithOctave}")
 
                     if ((thisMainIndex + 1) == len(mainStream)) or ((thisChildIndex + 1) == len(childStream)) \
                             or (
@@ -295,11 +296,12 @@ def handleDeltas(piece, index):
                         if addLyrics:
                             movementReference = ''
                             if child['movement'] != piece.movement:
-                                movementReference = f"{child['movement']}: "
+                                movementReference = f"{child['movement'].name}: "
 
                             mainLyric = f"[{matchLetter}: {matchLength} " + \
-                                        f"{mainPart}, " + \
-                                        f"{movementReference}{childPart}"
+                                        f"{mainPart}"
+                            if len(movementReference) > 0:
+                                mainLyric += ", " + f"{movementReference}{childPart}"
 
                             mainStartNote.addLyric(mainLyric)
                             mainEndString = f"v{voice} {matchLetter}]"
@@ -308,8 +310,7 @@ def handleDeltas(piece, index):
 
                             if child['movement'] == piece.movement:
                                 childLyric = f"[{matchLetter}: {matchLength} " + \
-                                             f"{childPart}, " + \
-                                             f"{mainPart}"
+                                             f"{childPart}"
 
                                 childStartNote.addLyric(childLyric)
 
@@ -512,7 +513,7 @@ def handlePartsVoices(piece):
 
         part.insert(0, metadata.Metadata())
         part.metadata.movementName = f"part number {partNumber}"
-        part.show()
+        # part.show()
 
         for note in part.recurse():
             if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
@@ -549,14 +550,14 @@ def handlePartsVoices(piece):
     for voiceIndex in voiceOffsetMap.keys():
         lastNote = None
 
-        voiceStream = piece.getVoiceStream(voiceIndex)
-        voiceNoteStream = piece.getVoiceNoteStream(voiceIndex)
+        voiceArray = piece.getVoiceArray(voiceIndex)
+        voiceNoteArray = piece.getVoiceNoteArray(voiceIndex)
 
         for totalOffset, note in sorted(voiceOffsetMap[voiceIndex].items()):
             if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
                 continue
 
-            voiceStream.append(note)
+            voiceArray.append(note)
 
             if "isRest" in dir(note) and note.isRest:
                 continue
@@ -568,7 +569,7 @@ def handlePartsVoices(piece):
                 if note.tie and note.tie.type != 'start':
                     continue
 
-                voiceNoteStream.append(note)
+                voiceNoteArray.append(note)
 
                 measure, beat = getMeasureBeat(piece, totalOffset)
                 myNote = MyNote(note)
@@ -581,7 +582,7 @@ def handlePartsVoices(piece):
                 if lastNote:
                     pieceDeltas.append(
                         Delta(
-                            myNote.noteOrdinal - pieceVoice[len(pieceVoice) - 2].noteOrdinal, lastNote, len(voiceStream), measure, beat
+                            myNote.noteOrdinal - pieceVoice[len(pieceVoice) - 2].noteOrdinal, lastNote, len(voiceArray), measure, beat
                         )
                     )
 
@@ -589,12 +590,12 @@ def handlePartsVoices(piece):
 
 
 def colorParts(piece):
-    for voiceIndex in piece.voiceStreams:
+    for voiceIndex in piece.voiceArrays:
         color = getVoiceColor(voiceIndex)
 
-        voiceStream = piece.voiceStreams[voiceIndex]
+        voiceArray = piece.getVoiceArray(voiceIndex)
 
-        for note in voiceStream.recurse():
+        for note in voiceArray:
             if "isNote" in dir(note) and note.isNote:
                 note.style.color = color
             elif "isRest" in dir(note) and note.isRest:
@@ -647,20 +648,21 @@ def getPaths(directory):
 
 def printDeltas(piece):
     print("notes")
-    for voice in piece.voiceNoteStreams:
-        noteWithOctaveString = f"   {voice} -> "
-        noteOrdinalString = f"   {voice} -> "
-        for note in piece.voiceNoteStreams[voice]:
-            noteWithOctaveString = noteWithOctaveString + f"{note.nameWithOctave}{note.style.color}, "
-            noteOrdinalString = noteOrdinalString + f"{MyNote.getNoteOrdinal(note)}, "
+    for voiceIndex in piece.voiceNoteArrays:
+        noteWithOctaveString = f"   {voiceIndex} -> "
+        noteOrdinalString = f"   {voiceIndex} -> "
+        for note in piece.getVoiceNoteArray(voiceIndex):
+            if ("nameWithOctave" in dir(note)):
+                noteWithOctaveString = noteWithOctaveString + f"{note.nameWithOctave}, "
+                noteOrdinalString = noteOrdinalString + f"{MyNote.getNoteOrdinal(note)}, "
 
         print(noteWithOctaveString)
         print(noteOrdinalString)
 
     print("deltas")
-    for voice in piece.deltas:
-        deltaString = f"   {voice} -> "
-        for delta in piece.deltas[voice]:
+    for voiceIndex in piece.deltas:
+        deltaString = f"   {voiceIndex} -> "
+        for delta in piece.deltas[voiceIndex]:
             deltaString = deltaString + f"{delta.delta}{delta.note.nameWithOctave}, "
 
         print(deltaString)
@@ -746,9 +748,9 @@ def writeXml(piece):
 def walkDirectory(directory):
     index = {}
 
-    withDeltas = False
-    writeBlack = False
-    shouldColorFiguredBass = False
+    withInsights = True
+    writeBlack = True
+    shouldColorFiguredBass = True
     shouldColorParts = True
 
     pieces = []
@@ -756,30 +758,30 @@ def walkDirectory(directory):
         path = directory + "/" + file
         movement = pathToMovement(path)
 
-        if not movement.name == 'Aria':
-            continue
+        # if not movement.name == 'Variation 1':
+        #     continue
 
         print(f"{path} -> {movement.name}")
         piece = ingestFile(path)
 
         handlePartsVoices(piece)
 
-        for voiceIndex in piece.voiceStreams:
-            voiceStream = piece.getVoiceStream(voiceIndex)
-            voiceNoteStream = piece.getVoiceNoteStream(voiceIndex)
+        # for voiceIndex in piece.voiceArrays:
+        #     voiceArray = piece.getVoiceArray(voiceIndex)
+        #     voiceNoteArray = piece.getVoiceNoteArray(voiceIndex)
+        #
+        #     voiceArray.timeSignature = piece.stream.parts[0].measure(1).timeSignature
+        #     voiceNoteArray.timeSignature = piece.stream.parts[0].measure(1).timeSignature
+        #
+        #     voiceArray.insert(0, metadata.Metadata())
+        #     voiceArray.metadata.movementName = f"voiceArray {voiceIndex=}"
+        #     voiceArray.show()
+        #
+        #     voiceNoteArray.insert(0, metadata.Metadata())
+        #     voiceNoteArray.metadata.movementName = f"voiceNoteArray {voiceIndex=}"
+        #     voiceNoteArray.show()
 
-            voiceStream.timeSignature = piece.stream.parts[0].measure(1).timeSignature
-            voiceNoteStream.timeSignature = piece.stream.parts[0].measure(1).timeSignature
-
-            # voiceStream.insert(0, metadata.Metadata())
-            # voiceStream.metadata.movementName = f"voiceStream {voiceIndex=}"
-            # voiceStream.show()
-            #
-            # voiceNoteStream.insert(0, metadata.Metadata())
-            # voiceNoteStream.metadata.movementName = f"voiceNoteStream {voiceIndex=}"
-            # voiceNoteStream.show()
-
-        if withDeltas:
+        if withInsights:
             indexDeltas(index, piece)
 
         pieces.append(piece)
@@ -794,9 +796,10 @@ def walkDirectory(directory):
 
         if shouldColorFiguredBass:
             colorFiguredBass(piece)
-            # path = piece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
-            # fp = piece.stream.write("musicxml", fp=path)
-            # print(f"{path} was written")
+            piece.backInBlack()
+            path = piece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
+            fp = piece.stream.write("musicxml", fp=path)
+            print(f"{path} was written")
 
         if shouldColorParts:
             colorParts(piece)
@@ -804,11 +807,25 @@ def walkDirectory(directory):
             fp = piece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
-    for file in getPaths(directory):
-        printDeltas(piece)
-        handleDeltas(piece, index)
-        # formSyncedMidi(piece)
-        # writeSyncedMidi(piece)
+        if shouldColorFiguredBass and shouldColorParts:
+            colorFiguredBass(piece)
+            path = piece.path.replace("musicxml-clean", "musicxml-out/colored-parts-and-figured-bass")
+            fp = piece.stream.write("musicxml", fp=path)
+            print(f"{path} was written")
+
+        if withInsights:
+            if shouldColorFiguredBass or shouldColorParts:
+                piece.backInBlack()
+
+            printDeltas(piece)
+            try:
+                handleDeltas(piece, index)
+            except:
+                print("An exception occurred")
+
+            path = piece.path.replace("musicxml-clean", "musicxml-out/insightful")
+            fp = piece.stream.write("musicxml", fp=path)
+            print(f"{path} was written")
 
         # versions
         # all black
@@ -817,7 +834,6 @@ def walkDirectory(directory):
         # colored voices - colored figured bass
         # colored voice - colored figured bass - with lyrics for patterns
 
-        writeXml(piece)
 
-
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-out/black")
 walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean")
