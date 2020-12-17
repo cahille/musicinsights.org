@@ -172,7 +172,7 @@ def indexDeltas(index, piece):
 
             index[snippetString].append(
                 {
-                    'movement': piece.movement,
+                    'piece': piece,
                     'startingIndex': i,
                     'snippet': snippet,
                     'voice': voice,
@@ -203,7 +203,7 @@ def handleDeltas(piece, index):
     matched = []
 
     for voice in sorted(piece.deltas.keys()):
-        mainStream = piece.voiceNoteArrays[voice]
+        mainStream = piece.getVoiceNoteArray(voice)
 
         for snippet in index.keys():
             main = index[snippet][0]
@@ -214,7 +214,7 @@ def handleDeltas(piece, index):
             for deltaIndex in range(1, len(index[snippet])):
                 child = index[snippet][deltaIndex]
 
-                # if child['movement'] != piece.movement:
+                # if child['piece'].movement != piece.movement:
                 #     continue
 
                 if main['voice'] == child['voice']:
@@ -223,7 +223,7 @@ def handleDeltas(piece, index):
                 if matchIncluded(matched, child):
                     continue
 
-                childStream = piece.voiceNoteArrays[child['voice']]
+                childStream = child['piece'].voiceNoteArrays[child['voice']]
 
                 mainStartingLoopIndex = main['startingIndex'] + MINIMUM_SNIPPET_LENGTH
                 childStartingLoopIndex = child['startingIndex'] + MINIMUM_SNIPPET_LENGTH
@@ -267,7 +267,7 @@ def handleDeltas(piece, index):
                         childStartNote = childStream[child['startingIndex']]
 
                         mainPart = f"v{voice} {getMeasureBeatString(piece, mainStartNote)}-" + f"{getMeasureBeatString(piece, mainEndNote)}"
-                        childPart = f"v{child['voice']} {getMeasureBeatString(piece, childStartNote)}" + f"-{getMeasureBeatString(piece, childEndNote)}"
+                        childPart = f"v{child['voice']} {getMeasureBeatString(child['piece'], childStartNote)}" + f"-{getMeasureBeatString(child['piece'], childEndNote)}"
 
                         if childPart in matches:
                             matchLetter = matches[childPart]['letter']
@@ -295,8 +295,8 @@ def handleDeltas(piece, index):
                         addLyrics = True
                         if addLyrics:
                             movementReference = ''
-                            if child['movement'] != piece.movement:
-                                movementReference = f"{child['movement'].name}: "
+                            if child['piece'].movement != piece.movement:
+                                movementReference = f"{child['piece'].movement.name}: "
 
                             mainLyric = f"[{matchLetter}: {matchLength} " + \
                                         f"{mainPart}"
@@ -308,7 +308,7 @@ def handleDeltas(piece, index):
                             if mainEndNote.lyric == None or not mainEndString in mainEndNote.lyric:
                                 mainEndNote.addLyric(mainEndString)
 
-                            if child['movement'] == piece.movement:
+                            if child['piece'].movement == piece.movement:
                                 childLyric = f"[{matchLetter}: {matchLength} " + \
                                              f"{childPart}"
 
@@ -745,21 +745,21 @@ def writeXml(piece):
     print(f"{xmlPath} was written")
 
 
-def walkDirectory(directory):
+def walkDirectory(directory, thisMovement=None, movementLimit=None):
     index = {}
 
     withInsights = True
-    writeBlack = True
-    shouldColorFiguredBass = True
-    shouldColorParts = True
+    writeBlack = False
+    shouldColorFiguredBass = False
+    shouldColorParts = False
 
     pieces = []
     for file in getPaths(directory):
         path = directory + "/" + file
         movement = pathToMovement(path)
 
-        # if not movement.name == 'Variation 1':
-        #     continue
+        if thisMovement != None and movement.name != thisMovement:
+            continue
 
         print(f"{path} -> {movement.name}")
         piece = ingestFile(path)
@@ -785,6 +785,9 @@ def walkDirectory(directory):
             indexDeltas(index, piece)
 
         pieces.append(piece)
+
+        if movementLimit != None and len(pieces) >= movementLimit:
+            break
 
     trimIndex(index)
 
@@ -818,10 +821,10 @@ def walkDirectory(directory):
                 piece.backInBlack()
 
             printDeltas(piece)
-            try:
-                handleDeltas(piece, index)
-            except:
-                print("An exception occurred")
+            # try:
+            handleDeltas(piece, index)
+            # except:
+            #     print("An exception occurred")
 
             path = piece.path.replace("musicxml-clean", "musicxml-out/insightful")
             fp = piece.stream.write("musicxml", fp=path)
@@ -836,4 +839,5 @@ def walkDirectory(directory):
 
 
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-out/black")
-walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean")
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 3")
+walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movementLimit=3)
