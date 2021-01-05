@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3.8
 
 from Delta import Delta
+import json
 import music21
 from music21 import *
 from Movement import Movement
@@ -12,9 +13,13 @@ from Piece import Piece
 import re
 import sys
 
-
 MARK_IN = articulations.StrongAccent()
 MARK_OUT = articulations.Accent()
+OFFSETS = {}
+STATS = {
+    'intOffsetsCount': {},
+    'keys': {}
+}
 
 music21.environment.set("musescoreDirectPNGPath", "/Applications/MuseScore 3.app")
 music21.environment.set("musicxmlPath", "/Applications/MuseScore 3.app")
@@ -34,6 +39,7 @@ MOVEMENTS = [
             3: [[69, 69]],
             4: [[84, 95]]},
         5: {2: [[2, 2], [18.5, 20.75], [27, 27], [46, 47.5], [54.5, 56.5], [78, 79]],
+            3: [[2, 2]],
             4: [[21, 24], [30, 35.5], [42, 42], [52, 52], [48, 53], [57, 75], [81, 83.5]]},
         6: {3: [[1, 1], [68.5, 68.5]]}
     }),
@@ -161,6 +167,9 @@ def snippetToString(snippet):
 
 
 def indexDeltas(index, piece):
+    if piece.movement.name == 'Aria da capo':
+        return
+
     for voice in piece.deltas.keys():
         theseDeltas = piece.deltas[voice]
 
@@ -189,7 +198,7 @@ def beatInt(beat):
 
 def matchIncluded(matched, matchCandidate):
     for match in matched:
-        if matchCandidate['voice'] != match['voice']:
+        if matchCandidate['piece'].movement.name != match['piece'].movement.name or matchCandidate['voice'] != match['voice']:
             continue
 
         if match['i'] <= matchCandidate['startingIndex'] and match['j'] >= matchCandidate['startingIndex']:
@@ -202,11 +211,11 @@ def handleDeltas(piece, index):
     matches = {}
     matched = []
 
-    for voice in sorted(piece.deltas.keys()):
-        mainStream = piece.getVoiceNoteArray(voice)
-
-        for snippet in index.keys():
-            main = index[snippet][0]
+    for snippet in index.keys():
+        for i in range(0, len(index[snippet])):
+            main = index[snippet][i]
+            mainVoice = index[snippet][i]['voice']
+            mainStream = main['piece'].getVoiceNoteArray(mainVoice)
 
             if matchIncluded(matched, main):
                 continue
@@ -214,11 +223,8 @@ def handleDeltas(piece, index):
             for deltaIndex in range(1, len(index[snippet])):
                 child = index[snippet][deltaIndex]
 
-                # if child['piece'].movement != piece.movement:
-                #     continue
-
-                if main['voice'] == child['voice']:
-                    continue
+                # if child['piece'].movement != main['piece'].movement:
+                #     child
 
                 if matchIncluded(matched, child):
                     continue
@@ -227,7 +233,6 @@ def handleDeltas(piece, index):
 
                 mainStartingLoopIndex = main['startingIndex'] + MINIMUM_SNIPPET_LENGTH
                 childStartingLoopIndex = child['startingIndex'] + MINIMUM_SNIPPET_LENGTH
-
                 mainLastNote = mainStream[mainStartingLoopIndex - 1]
                 childLastNote = childStream[childStartingLoopIndex - 1]
 
@@ -245,9 +250,10 @@ def handleDeltas(piece, index):
 
                     if ((thisMainIndex + 1) == len(mainStream)) or ((thisChildIndex + 1) == len(childStream)) \
                             or (
-                            (MyNote.getNoteOrdinal(mainNote) - MyNote.getNoteOrdinal(mainLastNote)) != (MyNote.getNoteOrdinal(childNote) - MyNote.getNoteOrdinal(childLastNote))):
-                        matchCandidateOne = {'voice': voice, 'i': mainStartingLoopIndex, 'j': thisMainIndex - 1}
-                        matchCandidateTwo = {'voice': child['voice'], 'i': child['startingIndex'], 'j': thisChildIndex - 1}
+                            (MyNote.getNoteOrdinal(mainNote) - MyNote.getNoteOrdinal(mainLastNote)) != (
+                            MyNote.getNoteOrdinal(childNote) - MyNote.getNoteOrdinal(childLastNote))):
+                        matchCandidateOne = {'piece': main['piece'], 'voice': mainVoice, 'i': mainStartingLoopIndex, 'j': thisMainIndex - 1}
+                        matchCandidateTwo = {'piece': child['piece'], 'voice': child['voice'], 'i': child['startingIndex'], 'j': thisChildIndex - 1}
 
                         matched.append(matchCandidateOne)
                         matched.append(matchCandidateTwo)
@@ -256,6 +262,7 @@ def handleDeltas(piece, index):
 
                         # the -1 for endnotes is because this note didn't match
                         mainStartNote = mainStream[main['startingIndex']]
+                        childStartNote = childStream[child['startingIndex']]
 
                         if ((thisMainIndex + 1) == len(mainStream)) or ((thisChildIndex + 1) == len(childStream)):
                             mainEndNote = mainStream[thisMainIndex]
@@ -264,9 +271,7 @@ def handleDeltas(piece, index):
                             mainEndNote = mainStream[thisMainIndex - 1]
                             childEndNote = childStream[thisChildIndex - 1]
 
-                        childStartNote = childStream[child['startingIndex']]
-
-                        mainPart = f"v{voice} {getMeasureBeatString(piece, mainStartNote)}-" + f"{getMeasureBeatString(piece, mainEndNote)}"
+                        mainPart = f"v{mainVoice} {getMeasureBeatString(main['piece'], mainStartNote)}-" + f"{getMeasureBeatString(main['piece'], mainEndNote)}"
                         childPart = f"v{child['voice']} {getMeasureBeatString(child['piece'], childStartNote)}" + f"-{getMeasureBeatString(child['piece'], childEndNote)}"
 
                         if childPart in matches:
@@ -276,47 +281,52 @@ def handleDeltas(piece, index):
                             matchLetter = matches[mainPart]['letter']
                             matchLength = matches[mainPart]['length']
                         else:
-                            matchLetter = chr(ord('@') + int(len(matches) / 2) + 1)
+                            # matchLetter = chr(ord('@') + int(len(matches) / 2) + 1)
+                            matchLetter = len(matches) + 1
                             thisMatch = {'letter': matchLetter, 'length': matchLength}
                             matches[mainPart] = thisMatch
                             matches[childPart] = thisMatch
 
-                        mainStartNote.articulations.append(MARK_IN)
-                        childStartNote.articulations.append(MARK_IN)
-
-                        if mainEndNote.articulations == None or (len(mainEndNote.articulations) == 0) or (
-                                len(mainEndNote.articulations) > 0 and mainEndNote.articulations[0] == MARK_IN):
-                            mainEndNote.articulations.append(MARK_OUT)
-
-                        if childEndNote.articulations == None or (len(childEndNote.articulations) == 0) or (
-                                len(childEndNote.articulations) > 0 and childEndNote.articulations[0] == MARK_IN):
-                            childEndNote.articulations.append(MARK_OUT)
-
                         addLyrics = True
                         if addLyrics:
                             movementReference = ''
-                            if child['piece'].movement != piece.movement:
+                            if child['piece'].movement != main['piece'].movement:
                                 movementReference = f"{child['piece'].movement.name}: "
 
+                        if addLyrics:
                             mainLyric = f"[{matchLetter}: {matchLength} " + \
                                         f"{mainPart}"
-                            if len(movementReference) > 0:
-                                mainLyric += ", " + f"{movementReference}{childPart}"
+                            mainLyric += ", " + f"{movementReference}{childPart}"
 
-                            mainStartNote.addLyric(mainLyric)
-                            mainEndString = f"v{voice} {matchLetter}]"
+                            if mainStartNote.lyric == None or not mainLyric in mainStartNote.lyric:
+                                if mainEndNote.articulations == None or (len(mainEndNote.articulations) == 0) or (
+                                        len(mainEndNote.articulations) > 0 and mainEndNote.articulations[0] == MARK_OUT):
+                                    mainStartNote.articulations.append(MARK_IN)
+                                mainStartNote.addLyric(mainLyric)
+
+                            mainEndString = f"v{mainVoice} {matchLetter}]"
                             if mainEndNote.lyric == None or not mainEndString in mainEndNote.lyric:
                                 mainEndNote.addLyric(mainEndString)
+                                if mainEndNote.articulations == None or (len(mainEndNote.articulations) == 0) or (
+                                        len(mainEndNote.articulations) > 0 and mainEndNote.articulations[0] == MARK_IN):
+                                    mainEndNote.articulations.append(MARK_OUT)
 
-                            if child['piece'].movement == piece.movement:
-                                childLyric = f"[{matchLetter}: {matchLength} " + \
-                                             f"{childPart}"
+                            childLyric = f"[{matchLetter}: {matchLength} " + \
+                                         f"{childPart}"
+                            childLyric += ", " + f"{movementReference}{mainPart}"
 
+                            if childStartNote.lyric == None or not childLyric in childStartNote.lyric:
+                                if childStartNote.articulations == None or (len(childStartNote.articulations) == 0) or (
+                                        len(childStartNote.articulations) > 0 and childStartNote.articulations[0] == MARK_OUT):
+                                    childStartNote.articulations.append(MARK_IN)
                                 childStartNote.addLyric(childLyric)
 
-                                childEndString = f"v{child['voice']} {matchLetter}]"
-                                if childEndNote.lyric == None or not childEndString in childEndNote.lyric:
-                                    childEndNote.addLyric(childEndString)
+                            childEndString = f"v{child['voice']} {matchLetter}]"
+                            if childEndNote.lyric == None or not childEndString in childEndNote.lyric:
+                                childEndNote.addLyric(childEndString)
+                                if childEndNote.articulations == None or (len(childEndNote.articulations) == 0) or (
+                                        len(childEndNote.articulations) > 0 and childEndNote.articulations[0] == MARK_IN):
+                                    childEndNote.articulations.append(MARK_OUT)
 
                         break
                     else:
@@ -333,11 +343,25 @@ def getMeasureBeat(piece, offset):
 
 
 def getOffset(piece, note):
+    if piece in OFFSETS and note.id in OFFSETS[piece]:
+        return OFFSETS[piece][note.id]
+
     offset = None
     for candidate in piece.stream.flat:
         if candidate.id == note.id:
             offset = candidate.getOffsetBySite(piece.stream.flat)
             break
+        elif "isChord" in dir(candidate) and candidate.isChord:
+            for subCandidate in candidate.notes:
+                if subCandidate.id == note.id:
+                    offset = candidate.getOffsetBySite(piece.stream.flat)
+                    break
+
+    if offset != None:
+        if piece not in OFFSETS:
+            OFFSETS[piece] = {}
+
+        OFFSETS[piece][note.id] = offset
 
     return offset
 
@@ -448,6 +472,16 @@ def pathToMovement(path):
 def ingestFile(path):
     thisStream = openMusicFile(path)
 
+    for element in thisStream.flat:
+        if "isNote" in dir(element) or "isRest" in dir(element) or isinstance(element, music21.text.TextBox) or isinstance(element, music21.expressions.TextExpression):
+            continue
+        if isinstance(element, music21.instrument.Instrument):
+            thisStream.remove(element)
+            continue
+        if isinstance(element, music21.layout.SystemLayout) and element.measureNumber > 0:
+            thisStream.remove(element)
+            continue
+
     movement = pathToMovement(path)
 
     # setting time signatures to all parts to the time signature of the 0th
@@ -500,7 +534,7 @@ def colorFiguredBass(piece):
     print(f" -> {piece.figuredBassReports['missingMeasures']} missing measures\n")
 
 
-def handlePartsVoices(piece):
+def handlePartsVoices(piece, generateStats=False):
     partNumber = 0
 
     voiceOffsetMap = {}
@@ -588,6 +622,30 @@ def handlePartsVoices(piece):
 
                 lastNote = note
 
+    if generateStats:
+        for key in STATS:
+            if piece.movement.name not in STATS[key]:
+                STATS[key][piece.movement.name] = {}
+
+        for voiceIndex in voiceOffsetMap.keys():
+            for totalOffset, note in sorted(voiceOffsetMap[voiceIndex].items()):
+                intTotalOffset = int(totalOffset) + 1
+                if intTotalOffset not in STATS['intOffsetsCount'][piece.movement.name]:
+                    STATS['intOffsetsCount'][piece.movement.name][intTotalOffset] = 0
+
+                STATS['intOffsetsCount'][piece.movement.name][intTotalOffset] += 1
+
+        ksAnalyzer = analysis.discrete.KrumhanslSchmuckler()
+        windowedAnalysis = analysis.windowed.WindowedAnalysis(piece.stream, ksAnalyzer)
+        keys, ignore = windowedAnalysis.analyze(1)
+        STATS['keys'][piece.movement.name] = []
+
+        for key in keys:
+            STATS['keys'][piece.movement.name].append({
+                'name': key[0].name,
+                'flavor': key[1],
+                'number': key[2]
+            })
 
 def colorParts(piece):
     for voiceIndex in piece.voiceArrays:
@@ -745,13 +803,9 @@ def writeXml(piece):
     print(f"{xmlPath} was written")
 
 
-def walkDirectory(directory, thisMovement=None, movementLimit=None):
+def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=None,
+                  withInsights=False, writeBlack=False, shouldColorFiguredBass=False, shouldColorParts=False, generateStats=False):
     index = {}
-
-    withInsights = True
-    writeBlack = False
-    shouldColorFiguredBass = False
-    shouldColorParts = False
 
     pieces = []
     for file in getPaths(directory):
@@ -761,10 +815,13 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None):
         if thisMovement != None and movement.name != thisMovement:
             continue
 
+        if movements != None and movement.name not in movements:
+            continue
+
         print(f"{path} -> {movement.name}")
         piece = ingestFile(path)
 
-        handlePartsVoices(piece)
+        handlePartsVoices(piece, generateStats)
 
         # for voiceIndex in piece.voiceArrays:
         #     voiceArray = piece.getVoiceArray(voiceIndex)
@@ -797,6 +854,7 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None):
             fp = piece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
+    for piece in pieces:
         if shouldColorFiguredBass:
             colorFiguredBass(piece)
             piece.backInBlack()
@@ -804,18 +862,21 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None):
             fp = piece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
+    for piece in pieces:
         if shouldColorParts:
             colorParts(piece)
             path = piece.path.replace("musicxml-clean", "musicxml-out/colored-parts")
             fp = piece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
+    for piece in pieces:
         if shouldColorFiguredBass and shouldColorParts:
             colorFiguredBass(piece)
             path = piece.path.replace("musicxml-clean", "musicxml-out/colored-parts-and-figured-bass")
             fp = piece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
+    for piece in pieces:
         if withInsights:
             if shouldColorFiguredBass or shouldColorParts:
                 piece.backInBlack()
@@ -837,7 +898,16 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None):
         # colored voices - colored figured bass
         # colored voice - colored figured bass - with lyrics for patterns
 
+    if generateStats:
+        # with open('/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations' + '/stats.json', 'w') as statsFile:
+        with open(directory + '/stats.json', 'w') as statsFile:
+            json.dump(STATS, statsFile, indent=4)
+
 
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-out/black")
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 3")
-walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movementLimit=3)
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 13")
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movementLimit=1, generateStats=True)
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=['Variation 1'], generateStats=True)
+walkDirectory("/Users/earlcahill/Downloads", movements=['feux follets'], generateStats=True)
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", withInsights=True, writeBlack=True, shouldColorFiguredBass=True,
+#               shouldColorParts=True)

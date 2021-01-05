@@ -14,8 +14,8 @@ jobs = []
 fromDirectory = "musicxml-out"
 toDirectory = "pdf"
 
-for root, dirs, fromFiles in os.walk(fromDirectory, topdown=False):
-    for fromFile in fromFiles:
+for root, dirs, fromFiles in os.walk(fromDirectory, topdown=False, ):
+    for fromFile in sorted(fromFiles):
         if not fromFile.endswith(".xml"):
             continue
 
