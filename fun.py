@@ -635,17 +635,120 @@ def handlePartsVoices(piece, generateStats=False):
 
                 STATS['intOffsetsCount'][piece.movement.name][intTotalOffset] += 1
 
-        ksAnalyzer = analysis.discrete.KrumhanslSchmuckler()
-        windowedAnalysis = analysis.windowed.WindowedAnalysis(piece.stream, ksAnalyzer)
-        keys, ignore = windowedAnalysis.analyze(1)
-        STATS['keys'][piece.movement.name] = []
+        STATS['keys'][piece.movement.name] = getKeyStats(piece.stream)
 
-        for key in keys:
-            STATS['keys'][piece.movement.name].append({
-                'name': key[0].name,
-                'flavor': key[1],
-                'number': key[2]
-            })
+
+def getKeyStats(stream):
+    ksAnalyzer = analysis.discrete.KrumhanslSchmuckler()
+    windowedAnalysis = analysis.windowed.WindowedAnalysis(stream, ksAnalyzer)
+    theseKeys, ignore = windowedAnalysis.analyze(1)
+
+    keys = []
+
+    for key in theseKeys:
+        keys.append(None if key == None else {
+            'name': None if key[0] == None else key[0].name,
+            'flavor': key[1],
+            'number': key[2]
+        })
+
+    return keys
+
+
+def generateGenericStats(path):
+    stream = converter.parse(path)
+    stats = {
+        'histogram': {
+            'global': {},
+            'note': {}
+        },
+        'intOffsetsCount': {},
+    }
+
+    maxOffset = None
+
+    for part in stream.parts:
+        for element in part.flat:
+            if "isNote" in dir(element) and element.isNote:
+                offset = int(element.getOffsetInHierarchy(stream))
+
+                if maxOffset == None or offset > maxOffset:
+                    maxOffset = offset
+
+                if offset not in stats['intOffsetsCount']:
+                    stats['intOffsetsCount'][offset] = 0
+
+                stats['intOffsetsCount'][offset] += 1
+
+                for (type, value) in (
+                        ('note', element.name),
+                        ('global', MyNote.getNoteOrdinal(element))):
+                    if offset not in stats['histogram'][type]:
+                        stats['histogram'][type][offset] = {}
+
+                    if element.name not in stats['histogram'][type][offset]:
+                        stats['histogram'][type][offset][value] = 0
+
+                    stats['histogram'][type][offset][value] += 1
+
+    stats['keys'] = getKeyStats(stream)
+    stats['elapseds'] = getElapsedByOffset(stream, maxOffset)
+
+    with open(os.path.dirname(path) + '/stats.json', 'w') as statsFile:
+        print(f"writing to {statsFile}")
+        json.dump(stats, statsFile, indent=4)
+
+
+def getCurrentMetronome(metronomeOffsets, offset):
+    if offset in metronomeOffsets:
+        return metronomeOffsets[offset]
+
+    lastMetronome = None
+    for thisOffset, metronome in sorted(metronomeOffsets.items()):
+        if thisOffset > offset:
+            return lastMetronome
+
+        lastMetronome = metronome
+
+    return lastMetronome
+
+
+def getElapsedByOffset(stream, maxOffset):
+    metronomeOffsets = getMetronomeOffsets(stream)
+
+    elasped = 0
+
+    elapsedByOffset = {}
+
+    for offset in range(0, maxOffset + 1):
+        elapsedByOffset[elasped] = offset
+
+        currentMetronome = getCurrentMetronome(metronomeOffsets, offset)
+        if currentMetronome == None:
+            print("darn no currentMetronome")
+        elif currentMetronome.beatDuration.type == 'quarter':
+            elasped += 60 / currentMetronome.number
+        else:
+            print("darn no quarter given")
+
+    return elapsedByOffset
+
+
+def getMetronomeOffsets(stream):
+    metronomeOffsets = {}
+
+    for part in stream.parts:
+        for element in part.flat:
+            if isinstance(element, music21.tempo.MetronomeMark):
+                offset = int(element.getOffsetInHierarchy(stream))
+                if offset not in metronomeOffsets:
+                    metronomeOffsets[offset] = element
+                else:
+                    metronomeOffsets[offset] = element
+                    print("lots of metronome markings!")
+
+    return metronomeOffsets
+
 
 def colorParts(piece):
     for voiceIndex in piece.voiceArrays:
@@ -904,10 +1007,11 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
             json.dump(STATS, statsFile, indent=4)
 
 
+generateGenericStats('/Users/earlcahill/music-video-experiments/transcendental_etude_no_10/transcendental_etude_no_10.musicxml')
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-out/black")
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 13")
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movementLimit=1, generateStats=True)
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=['Variation 1'], generateStats=True)
-walkDirectory("/Users/earlcahill/Downloads", movements=['feux follets'], generateStats=True)
+# walkDirectory("/Users/earlcahill/Downloads", movements=['feux follets'], generateStats=True)
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", withInsights=True, writeBlack=True, shouldColorFiguredBass=True,
 #               shouldColorParts=True)

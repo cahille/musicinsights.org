@@ -63,6 +63,7 @@ def go(directory, movement, beatsPerMeasure):
     statsFilename = f"{directory}/stats.json"
     messagesFilename = f"{directory}/messages.json"
     beatsFilename = f"{directory}/beats.json"
+    alignFilename = f"{directory}/align.txt"
 
     stats = {}
 
@@ -96,7 +97,7 @@ def go(directory, movement, beatsPerMeasure):
 
     fnt = ImageFont.truetype('/Library/Fonts/Arial.ttf', 40)
 
-    out = cv2.VideoWriter('/Users/earlcahill/project.mp4', cv2.VideoWriter_fourcc(*'MP4V'), FPS, (1920, 1080))
+    out = cv2.VideoWriter(directory + '/statsVideo.mp4', cv2.VideoWriter_fourcc(*'MP4V'), FPS, (1920, 1080))
 
     maxFrame = int(maxBeatTime) * FPS + FPS
     textColor = (0, 0, 0)
@@ -134,4 +135,4 @@ def go(directory, movement, beatsPerMeasure):
     out.release()
 
 
-go("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations", 'Variation 1', 3)
+go("/Users/earlcahill/music-video-experiments/transcendental_etude_no_10", 'feux_follets', 2)
