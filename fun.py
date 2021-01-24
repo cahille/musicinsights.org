@@ -657,15 +657,18 @@ def getKeyStats(stream):
 
 def generateGenericStats(path):
     stream = converter.parse(path)
+    # stream.show()
     stats = {
         'histogram': {
             'global': {},
             'note': {}
         },
-        'intOffsetsCount': {},
+        'intOffsetsCount': {
+        }
     }
 
-    maxOffset = None
+    maxOffset = 364
+    minOffset = None
 
     for part in stream.parts:
         for element in part.flat:
@@ -674,6 +677,9 @@ def generateGenericStats(path):
 
                 if maxOffset == None or offset > maxOffset:
                     maxOffset = offset
+
+                if minOffset == None or offset < minOffset:
+                    minOffset = offset
 
                 if offset not in stats['intOffsetsCount']:
                     stats['intOffsetsCount'][offset] = 0
@@ -692,7 +698,7 @@ def generateGenericStats(path):
                     stats['histogram'][type][offset][value] += 1
 
     stats['keys'] = getKeyStats(stream)
-    stats['elapseds'] = getElapsedByOffset(stream, maxOffset)
+    stats['elapseds'] = getElapseds(stream, maxOffset)
 
     with open(os.path.dirname(path) + '/stats.json', 'w') as statsFile:
         print(f"writing to {statsFile}")
@@ -713,25 +719,25 @@ def getCurrentMetronome(metronomeOffsets, offset):
     return lastMetronome
 
 
-def getElapsedByOffset(stream, maxOffset):
+def getElapseds(stream, maxOffset):
     metronomeOffsets = getMetronomeOffsets(stream)
 
-    elasped = 0
+    elapsed = 0.0
 
-    elapsedByOffset = {}
+    elapseds = []
 
     for offset in range(0, maxOffset + 1):
-        elapsedByOffset[elasped] = offset
+        elapseds.append(float(elapsed))
 
         currentMetronome = getCurrentMetronome(metronomeOffsets, offset)
         if currentMetronome == None:
             print("darn no currentMetronome")
         elif currentMetronome.beatDuration.type == 'quarter':
-            elasped += 60 / currentMetronome.number
+            elapsed += 60 / currentMetronome.number
         else:
             print("darn no quarter given")
 
-    return elapsedByOffset
+    return elapseds
 
 
 def getMetronomeOffsets(stream):
@@ -1015,3 +1021,12 @@ generateGenericStats('/Users/earlcahill/music-video-experiments/transcendental_e
 # walkDirectory("/Users/earlcahill/Downloads", movements=['feux follets'], generateStats=True)
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", withInsights=True, writeBlack=True, shouldColorFiguredBass=True,
 #               shouldColorParts=True)
+
+
+# Measure 21, staff 1 incomplete. Expected: 5/8; Found: 124/192
+# Measure 76, staff 1 incomplete. Expected: 35/64; Found: 109/192
+# Measure 78, staff 1 incomplete. Expected: 43/64; Found: 137/192
+# Measure 79, staff 1 incomplete. Expected: 43/64; Found: 137/192
+# Measure 87, staff 1 incomplete. Expected: 5/8; Found: 124/192
+# Measure 143, staff 2 incomplete. Expected: 35/64; Found: 109/192
+# Measure 145, staff 2 incomplete. Expected: 35/64; Found: 109/192

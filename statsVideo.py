@@ -1,10 +1,11 @@
 #!/usr/local/bin/python3.8
 
 import cv2
-import glob
+import os
 import json
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+import time
 
 FPS = 24
 
@@ -31,7 +32,7 @@ def frame2Info(beatsPerMeasure, messages, frame, stats, beats):
 
     notesPlayed = 0
     for key in sorted(stats['intOffsetsCount']):
-        if currentBeatIndex == None or key > currentBeatIndex:
+        if currentBeatIndex == None or int(key) > currentBeatIndex:
             break
 
         notesPlayed += stats['intOffsetsCount'][key]
@@ -48,59 +49,73 @@ def frame2Info(beatsPerMeasure, messages, frame, stats, beats):
     return {
         'elapsed': elapsed,
         'beat': beat,
-        'measure': None if beat == None else int(beat / beatsPerMeasure) + 1,
+        'measure': None if beat == None else int(beat / beatsPerMeasure) + (0 if beat % beatsPerMeasure == 0 else 1),
         'beatInMeasure': None if beat == None else (currentBeatIndex % beatsPerMeasure) + 1,
         'notesPlayed': notesPlayed,
         'notesPerSecond': None if elapsed == 0 else notesPlayed / elapsed,
         'beatsPerSecond': None if (elapsed == 0 or currentBeatIndex == None) else currentBeatIndex / elapsed,
         'beatsPerMinute': None if (elapsed == 0 or currentBeatIndex == None) else currentBeatIndex / elapsed * 60,
-        'key': None if beat == None or beat not in stats['keys'] else stats['keys'][beat],
+        'key': None if beat == None or stats['keys'][beat - 1] == None else f"{stats['keys'][beat - 1]['name']} {stats['keys'][beat - 1]['flavor']}",
         'message': message
     }
 
 
-def go(directory, movement, beatsPerMeasure):
+def computeBeats(stats, align):
+    beats = []
+
+    for thisAlignIndex in range(0, len(align)):
+        for beat in range(len(beats), len(stats['elapseds'])):
+            thisElapsed = stats['elapseds'][beat]
+            thisAlign = align[thisAlignIndex]
+            if thisAlign['score'] >= float(thisElapsed):
+                beats.append(thisAlign['performance'])
+                break
+
+    return beats
+
+
+def go(path, beatsPerMeasure):
+    directory = os.path.dirname(path)
     statsFilename = f"{directory}/stats.json"
     messagesFilename = f"{directory}/messages.json"
-    beatsFilename = f"{directory}/beats.json"
-    alignFilename = f"{directory}/align.txt"
-
-    stats = {}
+    alignFilename = f"{directory}/align.json"
 
     with open(statsFilename) as f:
         tempStats = json.load(f)
 
-        for statsType in tempStats:
-            if movement in tempStats[statsType]:
-                stats[statsType] = {}
-
-                for key in tempStats[statsType][movement]:
-                    if statsType == 'intOffsetsCount':
-                        stats[statsType][int(key)] = tempStats[statsType][movement][key]
-                    elif statsType == 'keys':
-                        stats[statsType][len(stats[statsType]) + 1] = f"{key['name']} {key['flavor']}"
+        stats = {
+            'histogram': tempStats['histogram'],
+            'keys': tempStats['keys'],
+            'elapseds': tempStats['elapseds'],
+            'intOffsetsCount': {}
+        }
+        for key in tempStats['intOffsetsCount']:
+            stats['intOffsetsCount'][int(key)] = tempStats['intOffsetsCount'][key]
 
     with open(messagesFilename) as f:
-        messages = json.load(f)[movement]
+        messages = json.load(f)
 
-    with open(beatsFilename) as f:
-        beats = json.load(f)[movement]
-        maxBeatTime = beats[-1]
+    with open(alignFilename) as f:
+        align = json.load(f)
 
     totalNotes = 0
 
-    maxBeat = None
-    for beat in stats['intOffsetsCount']:
-        totalNotes += stats['intOffsetsCount'][beat]
-        if maxBeat == None or int(beat) + 1 > maxBeat:
-            maxBeat = int(beat) + 1
+    maxElapsed = None
+    for alignData in align:
+        if maxElapsed == None or alignData['performance'] > maxElapsed:
+            maxElapsed = alignData['performance'] + 1
 
     fnt = ImageFont.truetype('/Library/Fonts/Arial.ttf', 40)
 
     out = cv2.VideoWriter(directory + '/statsVideo.mp4', cv2.VideoWriter_fourcc(*'MP4V'), FPS, (1920, 1080))
 
-    maxFrame = int(maxBeatTime) * FPS + FPS
+    maxFrame = int(maxElapsed) * FPS + FPS
     textColor = (0, 0, 0)
+
+    beats = computeBeats(stats, align)
+
+    with open(directory + '/beats.json', 'w') as outfile:
+        json.dump(beats, outfile, indent=4)
 
     for frame in range(1, maxFrame):
         info = frame2Info(beatsPerMeasure, messages, frame, stats, beats)
@@ -121,18 +136,9 @@ def go(directory, movement, beatsPerMeasure):
 
         out.write(np.array(image))
 
-    #        image.save(f'/Users/earlcahill/frames/{frame:05}.png')
-
-    # filenames = glob.glob('/Users/earlcahill/frames/*.png')
-    #
-    # filenames.sort()
-    #
-    # for filename in filenames:
-    #     print(filename)
-    #     image = cv2.imread(filename)
-    #     out.write(image)
-
     out.release()
 
 
-go("/Users/earlcahill/music-video-experiments/transcendental_etude_no_10", 'feux_follets', 2)
+start = int(time.time())
+go("/Users/earlcahill/music-video-experiments/transcendental_etude_no_10/transcendental_etude_no_10-Albert.wav", 2)
+print(f"elapsed: {int(time.time()) - start}")
