@@ -1,25 +1,81 @@
 #!/usr/local/bin/python3.8
-
-from Delta import Delta
+import copy
 import json
-import music21
-from music21 import *
-from Movement import Movement
-from music21.exceptions21 import Music21Exception
-from MyNote import MyNote
+import math
 import os
-from pathlib import Path
-from Piece import Piece
+import random
 import re
 import sys
+from datetime import datetime
+from pathlib import Path
+
+import music21
+from music21 import *
+from music21.exceptions21 import Music21Exception
+
+from Delta import Delta
+from Movement import Movement
+from MyNote import MyNote
+from Piece import Piece
 
 MARK_IN = articulations.StrongAccent()
 MARK_OUT = articulations.Accent()
 OFFSETS = {}
 STATS = {
-    'intOffsetsCount': {},
+    'offsetsCount': {},
     'keys': {}
 }
+LEADER_COLOR = 'blue'
+FOLLOWER_COLOR = 'green'
+
+
+def computeMyKeys():
+    myKeys = {}
+    myKeysMap = {}
+
+    for tonicOrdinal in range(49, 62):
+        tonicNote = MyNote.getNote(tonicOrdinal)
+        myKeys[f'{tonicNote} Major'] = []
+        myKeys[f'{tonicNote} Minor'] = []
+
+        myKeysMap[f'{tonicNote} Major'] = {}
+        myKeysMap[f'{tonicNote} Minor'] = {}
+
+        noteKeyIndex = 0
+        totalOfset = 0
+        for offset in (0, 2, 2, 1, 2, 2, 2):
+            totalOfset += offset
+            myKeys[MyNote.getNote(tonicOrdinal) + ' Major'].append((MyNote.getNote(tonicOrdinal + totalOfset)))
+            myKeysMap[MyNote.getNote(tonicOrdinal) + ' Major'][MyNote.getNote(tonicOrdinal + totalOfset)] = noteKeyIndex
+            noteKeyIndex += 1
+
+        noteKeyIndex = 0
+        totalOfset = 0
+        for offset in (0, 2, 1, 2, 2, 1, 2):
+            totalOfset += offset
+            myKeys[MyNote.getNote(tonicOrdinal) + ' Minor'].append((MyNote.getNote(tonicOrdinal + totalOfset)))
+            myKeysMap[MyNote.getNote(tonicOrdinal) + ' Minor'][MyNote.getNote(tonicOrdinal + totalOfset)] = noteKeyIndex
+            noteKeyIndex += 1
+
+    return myKeys, myKeysMap
+
+
+MY_KEYS, MY_KEYS_MAP = computeMyKeys()
+
+COMPOSE_OFFSETS = [
+    [-1],
+    [1],
+    [-6],
+    [6],
+    [-1, 0],
+    [1, 0],
+    [-6, 0],
+    [6, 0],
+    [0, -1],
+    [0, 1],
+    [0, -6],
+    [0, 6]
+]
 
 music21.environment.set("musescoreDirectPNGPath", "/Applications/MuseScore 3.app")
 music21.environment.set("musicxmlPath", "/Applications/MuseScore 3.app")
@@ -39,46 +95,50 @@ MOVEMENTS = [
             3: [[69, 69]],
             4: [[84, 95]]},
         5: {2: [[2, 2], [18.5, 20.75], [27, 27], [46, 47.5], [54.5, 56.5], [78, 79]],
-            3: [[2, 2]],
+            3: [],
             4: [[21, 24], [30, 35.5], [42, 42], [52, 52], [48, 53], [57, 75], [81, 83.5]]},
-        6: {3: [[1, 1], [68.5, 68.5]]}
+        6: {3: [[68.5, 68.5]]}
     }),
     # Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}, '/Users/earlcahill/Desktop/movies/sync fun/02-variation 1.beats'),
-    Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 1, 4: 2, 5: 2}),
+    Movement('Variation 1', 32, False, {
+        1: 1, 2: 1, 3: 4, 4: 4, 5: 4, 6: 4
+    }),
     Movement('Variation 2', 32, True, {1: 1, 2: 2, 3: 3, 4: 3}),
-    Movement('Variation 3', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}),
+    Movement('Variation 3', 16, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[1, 2], canonOffsetSteps=0),
     Movement('Variation 4', 32, True, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 3, 7: 4}),
     Movement('Variation 5', 32, False, {1: 1, 2: 2, 3: 2}),
-    Movement('Variation 6', 32, True, {1: 1, 2: 2, 3: 4, 4: 4, 5: 3, 6: 3, 7: 3, 8: 3}, partOffsetMap={
+    Movement('Variation 6', 32, True, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3, 6: 3, 7: 3, 8: 3}, partOffsetMap={
         3: {1: [[33, 34.25]]},
         5: {2: [[9, 11.75], [21, 22.5], [24, 24], [25.5, 25.5]]},
         7: {2: [[12, 12]]}
-    }),
+    }, canonVoices=[2, 1], canonOffsetSteps=2),
     Movement('Variation 7', 32, False, {1: 1, 2: 2}),
     Movement('Variation 8', 32, False, {1: 1, 2: 2}),
-    Movement('Variation 9', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}),
+    Movement('Variation 9', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}, canonVoices=[1, 2], canonOffsetSteps=-4),
     Movement('Variation 10', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4}, partOffsetMap={
         3: {3: [[16, 38], [44, 62], [112, 126]]},
         4: {3: [[24, 27], [32, 34], [40, 42]]}
     }),
     Movement('Variation 11', 32, False, {1: 1, 2: 2, 3: 2, 4: 2}),
-    Movement('Variation 12', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2, 6: 3, 7: 3}, partOffsetMap={
-        5: {3: [[12, 14], [30, 32.5], [39, 47], [60.5, 72], [75, 83.75]]}
-    }),
+    Movement('Variation 12', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 3, 7: 3}, partOffsetMap={
+        4: {3: [[39, 42], [45, 47], [60.5, 83.75]]},
+        5: {2: [[8, 10.5]]}
+    }, canonVoices=[1, 2], canonOffsetSteps=-5, canonInverted=True),
     Movement('Variation 13', 32, False, {1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4}, partOffsetMap={
         4: {2: [[13, 13]]}
     }),
     Movement('Variation 14', 32, False, {1: 1, 2: 2}),
     Movement('Variation 15', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}, partOffsetMap={
-        4: {2: [[4, 7.25], [12, 13.875], [24.5, 27.25], [28.5, 29.75], [52, 53.5], [60, 62]]},
-        5: {2: [[14, 14], [54, 54.5]]}
-    }),
+        # 4: {2: [[4, 7.25], [12, 13.875], [24.5, 27.25], [28.5, 29.75], [52, 53.5], [60, 62]]},
+        # 5: {2: [[14, 14], [54, 54.5]]}
+    }, canonVoices=[1, 2], canonOffsetSteps=-7, canonInverted=True),  # G, A-flat, A, B-flat, B, C, C-sharp, D
     Movement('Variation 16', 48, True, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4}, partOffsetMap={
         3: {3: [[117.5, 117.5]]},
         4: {3: [[0, 0], [3.75, 4], [53.75, 54]]}
     }),
     Movement('Variation 17', 32, False, {1: 1, 2: 2}),
-    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}),
+    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[2, 1], canonOffsetSteps=8, canonInverted=True),
+    # G, A-flat, A, B-flat, B, C, C-sharp, D),  # B, C, C-sharp, D, D-sharp, E, F, F-sharp, G
     Movement('Variation 19', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}, partOffsetMap={
         4: {2: [[24, 24.5], [42, 47]]},
         5: {2: [[25.5, 25.5]]}
@@ -87,13 +147,13 @@ MOVEMENTS = [
     Movement('Variation 21', 16, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3, 7: 3}, partOffsetMap={
         4: {2: [[0, 7.5], [20, 23.5], [60.75, 62]]},
         5: {2: [[43, 45], [48.25, 49.75]]},
-    }),
+    }, canonOffsetSteps=11),  # B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, A-flat, A
     Movement('Variation 22', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4}, partOffsetMap={
         # 3: {3: [[34, 44], [50, 60], [78, 92], [98, 104], [112, 112]],
         #     4: [[68, 75], [96, 103]]},
         3: {3: [[34, 44], [50, 60], [78, 78], [84, 92], [106, 111], [116, 124]],
             4: [[68, 75], [96, 103]]},  # , [64, 112], [116, 124]]},
-        4: {4: [[32, 56], [64, 110], [116, 118], [124, 124]]},  # , [64, 112], [116, 124]]},
+        4: {4: [[32, 56], [64, 110], [116, 118], [124, 124]]},  # , [64, 112], [116, 124]]}, 2, 4, -5,
         5: {3: [[80, 83]]},
     }),
     Movement('Variation 23', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}, partOffsetMap={
@@ -109,7 +169,7 @@ MOVEMENTS = [
     }),
     Movement('Variation 25', 32, True, {1: 1, 2: 3, 3: 4, 4: 3, 5: 4}),
     # Movement('Variation 26', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
-    Movement('Variation 27', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
+    Movement('Variation 27', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}, canonOffsetSteps=14),  # G, A-flat, A, B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, G-flat, A
     Movement('Variation 28', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 4}, partOffsetMap={
         3: {3: [[18.125, 23.875], [36.125, 44.875], [60.125, 68.875], [36.125, 44.875], [60.125, 68.875], [72.125, 77.875]]},
         4: {4: [[18, 77]]},
@@ -154,7 +214,7 @@ def getVoiceColor(voice):
 
 
 def openMusicFile(path):
-    stream = converter.parse(path)
+    stream = converter.parse(path, forceSource=True)
     stream.insert(0, metadata.Metadata())
     stream.metadata.composer = "Johann Sebastian Bach"
     stream.metadata.movementName = pathToMovement(path).name
@@ -166,20 +226,34 @@ def snippetToString(snippet):
     return ",".join(map(lambda delta: str(delta.delta), snippet))
 
 
-def indexDeltas(index, piece):
+def getKeyCandidates(snippet):
+    keyCandidates = {}
+    for key in MY_KEYS:
+        for snip in snippet:
+            note = MyNote.getNote(MyNote.getNoteOrdinal(snip.note))
+            if note in MY_KEYS_MAP[key]:
+                if key not in keyCandidates:
+                    keyCandidates[key] = 0
+                keyCandidates[key] += 1
+
+    return keyCandidates
+
+
+def indexDeltas(chromaticIndex, scalarIndex, piece):
     if piece.movement.name == 'Aria da capo':
         return
 
     for voice in piece.deltas.keys():
-        theseDeltas = piece.deltas[voice]
+        chromaticDeltas = piece.deltas[voice]['chromatic']
+        scalarDeltas = piece.deltas[voice]['scalar']
 
-        for i in range(0, len(theseDeltas) - MINIMUM_SNIPPET_LENGTH):
-            snippet = theseDeltas[i: i + MINIMUM_SNIPPET_LENGTH]
+        for i in range(0, len(chromaticDeltas) - MINIMUM_SNIPPET_LENGTH):
+            snippet = chromaticDeltas[i: i + MINIMUM_SNIPPET_LENGTH]
             snippetString = snippetToString(snippet)
-            if not snippetString in index:
-                index[snippetString] = []
+            if not snippetString in chromaticIndex:
+                chromaticIndex[snippetString] = []
 
-            index[snippetString].append(
+            chromaticIndex[snippetString].append(
                 {
                     'piece': piece,
                     'startingIndex': i,
@@ -187,6 +261,9 @@ def indexDeltas(index, piece):
                     'voice': voice,
                 }
             )
+
+            keyCandidates = getKeyCandidates(snippet)
+
 
 def beatInt(beat):
     pair = str(beat).split('/')
@@ -472,6 +549,8 @@ def pathToMovement(path):
 def ingestFile(path):
     thisStream = openMusicFile(path)
 
+    movement = pathToMovement(path)
+
     for element in thisStream.flat:
         if "isNote" in dir(element) or "isRest" in dir(element) or isinstance(element, music21.text.TextBox) or isinstance(element, music21.expressions.TextExpression):
             continue
@@ -482,8 +561,6 @@ def ingestFile(path):
             thisStream.remove(element)
             continue
 
-    movement = pathToMovement(path)
-
     # setting time signatures to all parts to the time signature of the 0th
     for i in range(1, len(thisStream.parts)):
         if not thisStream.parts[i].timeSignature:
@@ -492,6 +569,55 @@ def ingestFile(path):
     piece = Piece(path, movement, thisStream)
 
     return piece
+
+
+def letsCompose(piece):
+    partNumber = 0
+
+    masterStream = stream.Stream()
+
+    for part in piece.stream.voicesToParts():
+        if not hasNote(part):
+            continue
+
+        thisPart = music21.stream.Part()
+        thisPart.timeSignature = part.measure(1).timeSignature
+
+        partNumber = partNumber + 1
+
+        for note in part.recurse():
+            if "isRest" not in dir(note) and "isNote" not in dir(note):
+                continue
+
+            if note.isRest:
+                thisPart.append(note)
+                continue
+
+            if note.tie:
+                thisPart.append(note)
+                continue
+
+            totalOffset = note.getOffsetInHierarchy(piece.stream)
+            voiceIndex = getVoiceIndex(piece.movement, partNumber, totalOffset)
+            measure, beat = getMeasureBeat(piece, totalOffset)
+
+            if voiceIndex == 1:
+                thisPart.append(note)
+                continue
+
+            theseOffsets = random.choice(COMPOSE_OFFSETS)
+
+            offsets = len(theseOffsets)
+
+            for thisOffset in theseOffsets:
+                newNote = music21.note.Note(note.nameWithOctave)
+                newNote.nameWithOctave = MyNote.getNoteWithOctave(MyNote.getNoteOrdinal(newNote) + thisOffset)
+                newNote.duration.quarterLength = note.duration.quarterLength / offsets
+                thisPart.append(newNote)
+
+        masterStream.append(thisPart)
+
+    piece.stream = masterStream
 
 
 def colorFiguredBass(piece):
@@ -539,47 +665,48 @@ def handlePartsVoices(piece, generateStats=False):
 
     voiceOffsetMap = {}
 
-    for part in piece.stream.voicesToParts():
-        if not hasNote(part):
-            continue
-
-        partNumber += 1
-
-        part.insert(0, metadata.Metadata())
-        part.metadata.movementName = f"part number {partNumber}"
-        # part.show()
-
-        for note in part.recurse():
-            if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
+    for topPart in piece.stream.parts:
+        for part in topPart.voicesToParts():
+            if not hasNote(part):
                 continue
 
-            totalOffset = note.getOffsetInHierarchy(piece.stream)
-            voiceIndex = getVoiceIndex(piece.movement, partNumber, totalOffset)
+            partNumber += 1
 
-            if "isChord" in (dir(note)) and note.isChord:
-                if voiceIndex == 1:
-                    note = note.notes[0]
-                elif voiceIndex == 4:
-                    note = note.notes[-1]
-                else:
-                    note
+            part.insert(0, metadata.Metadata())
+            part.metadata.movementName = f"{part.id=}, {partNumber=}"
+            # part.show()
 
-            if "isNote" in (dir(note)) and note.isNote:
-                print(f"p{partNumber} -> v{voiceIndex} -> {totalOffset} -> {note.nameWithOctave}")
+            for note in part.recurse():
+                if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
+                    continue
 
-            if voiceIndex not in voiceOffsetMap:
-                voiceOffsetMap[voiceIndex] = {}
+                totalOffset = note.getOffsetInHierarchy(piece.stream)
+                voiceIndex = getVoiceIndex(piece.movement, partNumber, totalOffset)
 
-            if "isRest" in dir(note) and note.isRest:
-                continue
+                if "isChord" in (dir(note)) and note.isChord:
+                    if voiceIndex == 1:
+                        note = note.notes[0]
+                    elif voiceIndex == 4:
+                        note = note.notes[-1]
+                    else:
+                        note
 
-            # if something is already there
-            if totalOffset in voiceOffsetMap[voiceIndex]:
-                # and the something is a note
-                if "isNote" in dir(voiceOffsetMap[voiceIndex][totalOffset]):
-                    print("hmm")
+                if "isNote" in (dir(note)) and note.isNote:
+                    print(f"p{partNumber} -> v{voiceIndex} -> {totalOffset} -> {note.nameWithOctave}")
 
-            voiceOffsetMap[voiceIndex][totalOffset] = note
+                if voiceIndex not in voiceOffsetMap:
+                    voiceOffsetMap[voiceIndex] = {}
+
+                if "isRest" in dir(note) and note.isRest:
+                    continue
+
+                # if something is already there
+                if totalOffset in voiceOffsetMap[voiceIndex]:
+                    # and the something is a note
+                    if "isNote" in dir(voiceOffsetMap[voiceIndex][totalOffset]):
+                        print(f"offset overlap p{partNumber} -> v{voiceIndex} -> {totalOffset}")
+
+                voiceOffsetMap[voiceIndex][totalOffset] = note
 
     for voiceIndex in voiceOffsetMap.keys():
         lastNote = None
@@ -614,13 +741,16 @@ def handlePartsVoices(piece, generateStats=False):
 
                 pieceVoice.append(myNote)
                 if lastNote:
-                    pieceDeltas.append(
+                    pieceDeltas['chromatic'].append(
                         Delta(
                             myNote.noteOrdinal - pieceVoice[len(pieceVoice) - 2].noteOrdinal, lastNote, len(voiceArray), measure, beat
                         )
                     )
 
                 lastNote = note
+
+    for voiceIndex in piece.voiceArrays:
+        myShow(piece.stream.parts[0].measure(1).timeSignature, piece.voiceArrays[voiceIndex], f"{piece.movement.name}: {voiceIndex}")
 
     if generateStats:
         for key in STATS:
@@ -630,10 +760,10 @@ def handlePartsVoices(piece, generateStats=False):
         for voiceIndex in voiceOffsetMap.keys():
             for totalOffset, note in sorted(voiceOffsetMap[voiceIndex].items()):
                 intTotalOffset = int(totalOffset) + 1
-                if intTotalOffset not in STATS['intOffsetsCount'][piece.movement.name]:
-                    STATS['intOffsetsCount'][piece.movement.name][intTotalOffset] = 0
+                if intTotalOffset not in STATS['offsetsCount'][piece.movement.name]:
+                    STATS['offsetsCount'][piece.movement.name][intTotalOffset] = 0
 
-                STATS['intOffsetsCount'][piece.movement.name][intTotalOffset] += 1
+                STATS['offsetsCount'][piece.movement.name][intTotalOffset] += 1
 
         STATS['keys'][piece.movement.name] = getKeyStats(piece.stream)
 
@@ -656,49 +786,49 @@ def getKeyStats(stream):
 
 
 def generateGenericStats(path):
-    stream = converter.parse(path)
+    stream = converter.parse(path, forceSource=True)
     # stream.show()
     stats = {
         'histogram': {
+            'values': {
+                'global': {},
+                'note': {}
+            },
             'global': {},
             'note': {}
         },
-        'intOffsetsCount': {
+        'offsetsCount': {
         }
     }
 
-    maxOffset = 364
-    minOffset = None
+    for element in stream.flat:
+        if "isNote" in dir(element) and element.isNote:
+            offset = element.getOffsetInHierarchy(stream)
 
-    for part in stream.parts:
-        for element in part.flat:
-            if "isNote" in dir(element) and element.isNote:
-                offset = int(element.getOffsetInHierarchy(stream))
+            if offset not in stats['offsetsCount']:
+                stats['offsetsCount'][offset] = 0
 
-                if maxOffset == None or offset > maxOffset:
-                    maxOffset = offset
+            stats['offsetsCount'][offset] += 1
 
-                if minOffset == None or offset < minOffset:
-                    minOffset = offset
+            for (type, value) in (
+                    ('note', element.name),
+                    ('global', MyNote.getNoteOrdinal(element))):
+                beatOffset = offset + 1
+                if beatOffset not in stats['histogram'][type]:
+                    stats['histogram'][type][beatOffset] = {}
 
-                if offset not in stats['intOffsetsCount']:
-                    stats['intOffsetsCount'][offset] = 0
+                if element.name not in stats['histogram'][type][beatOffset]:
+                    stats['histogram'][type][beatOffset][value] = 0
 
-                stats['intOffsetsCount'][offset] += 1
+                stats['histogram'][type][beatOffset][value] += 1
 
-                for (type, value) in (
-                        ('note', element.name),
-                        ('global', MyNote.getNoteOrdinal(element))):
-                    if offset not in stats['histogram'][type]:
-                        stats['histogram'][type][offset] = {}
-
-                    if element.name not in stats['histogram'][type][offset]:
-                        stats['histogram'][type][offset][value] = 0
-
-                    stats['histogram'][type][offset][value] += 1
+                if value not in stats['histogram']['values'][type]:
+                    stats['histogram']['values'][type][value] = 1
+                else:
+                    stats['histogram']['values'][type][value] += 1
 
     stats['keys'] = getKeyStats(stream)
-    stats['elapseds'] = getElapseds(stream, maxOffset)
+    stats['scoreTimings'] = getScoreTimings(stream, stats['offsetsCount'])
 
     with open(os.path.dirname(path) + '/stats.json', 'w') as statsFile:
         print(f"writing to {statsFile}")
@@ -719,25 +849,37 @@ def getCurrentMetronome(metronomeOffsets, offset):
     return lastMetronome
 
 
-def getElapseds(stream, maxOffset):
+def getScoreTimings(stream, offsets):
     metronomeOffsets = getMetronomeOffsets(stream)
 
-    elapsed = 0.0
+    maxOffset = sorted(offsets.keys(), reverse=True)[0]
 
-    elapseds = []
+    for offset in range(0, math.ceil(maxOffset)):
+        if float(offset) not in offsets:
+            offsets[float(offset)] = 0
 
-    for offset in range(0, maxOffset + 1):
-        elapseds.append(float(elapsed))
+    if len(metronomeOffsets) != 1:
+        print(f'need to have 1 metronomeOffsets :( {len(metronomeOffsets)} - {metronomeOffsets}')
+
+    scoreTimings = []
+
+    for offset in sorted(offsets.keys()):
+        beat = offset + 1
 
         currentMetronome = getCurrentMetronome(metronomeOffsets, offset)
+
         if currentMetronome == None:
             print("darn no currentMetronome")
         elif currentMetronome.beatDuration.type == 'quarter':
-            elapsed += 60 / currentMetronome.number
+            scoreTimings.append({
+                'offset': offset,
+                'beat': beat,
+                'elapsed': beat * (60 / currentMetronome.number)
+            })
         else:
             print("darn no quarter given")
 
-    return elapseds
+    return scoreTimings
 
 
 def getMetronomeOffsets(stream):
@@ -746,12 +888,14 @@ def getMetronomeOffsets(stream):
     for part in stream.parts:
         for element in part.flat:
             if isinstance(element, music21.tempo.MetronomeMark):
-                offset = int(element.getOffsetInHierarchy(stream))
+                offset = element.getOffsetInHierarchy(stream)
                 if offset not in metronomeOffsets:
                     metronomeOffsets[offset] = element
+                elif metronomeOffsets[offset].number == element.number:
+                    print(f"kind of redundant metronome marking {element}")
                 else:
                     metronomeOffsets[offset] = element
-                    print("lots of metronome markings!")
+                    print(f"lots of metronome markings! {element}")
 
     return metronomeOffsets
 
@@ -761,6 +905,8 @@ def colorParts(piece):
         color = getVoiceColor(voiceIndex)
 
         voiceArray = piece.getVoiceArray(voiceIndex)
+
+        # myShow(voiceArray)
 
         for note in voiceArray:
             if "isNote" in dir(note) and note.isNote:
@@ -786,7 +932,7 @@ def colorFiguredBassNote(piece, voiceIndex, measure, note):
 
 
 def handleFiguredBassNote(piece, voiceIndex, totalOffset, note, measure):
-    if voiceIndex < 3:
+    if not voiceIndex or voiceIndex < 3:
         return
 
     figuredBassNote = getFiguredBassNote(piece, totalOffset)
@@ -829,7 +975,7 @@ def printDeltas(piece):
     print("deltas")
     for voiceIndex in piece.deltas:
         deltaString = f"   {voiceIndex} -> "
-        for delta in piece.deltas[voiceIndex]:
+        for delta in piece.deltas[voiceIndex]['chromatic']:
             deltaString = deltaString + f"{delta.delta}{delta.note.nameWithOctave}, "
 
         print(deltaString)
@@ -912,10 +1058,180 @@ def writeXml(piece):
     print(f"{xmlPath} was written")
 
 
-def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=None,
-                  withInsights=False, writeBlack=False, shouldColorFiguredBass=False, shouldColorParts=False, generateStats=False):
-    index = {}
+def getLeaderFollowerInfo(movement, piece):
+    leader = piece.voiceArrays[movement.canonVoices[0]]
+    follower = piece.voiceArrays[movement.canonVoices[1]]
 
+    leaderFirstHalf = 0
+    leaderSecondHalf = 0
+    followerFirstHalf = 0
+    followerSecondHalf = 0
+    followerFirstHalfLag = None
+    followerSecondHalfLag = None
+    leaderOffsets = {}
+
+    halfMeasures = movement.measures / 2
+
+    for i in range(0, len(leader)):
+        leaderOffset = getOffset(piece, leader[i])
+        leaderOffsets[leaderOffset] = leader[i]
+
+        measure, beat = getMeasureBeat(piece, leaderOffset)
+        if measure <= halfMeasures:
+            leaderFirstHalf += 1
+        else:
+            leaderSecondHalf += 1
+
+    for i in range(0, len(follower)):
+        followerNote = follower[i]
+
+        measure, beat = getMeasureBeat(piece, getOffset(piece, followerNote))
+
+        if measure <= halfMeasures:
+            followerFirstHalf += 1
+            if followerFirstHalfLag == None:
+                followerFirstHalfLag = getOffset(piece, followerNote)
+        else:
+            followerSecondHalf += 1
+            if followerSecondHalfLag == None:
+                followerSecondHalfLag = getOffset(piece, followerNote) - halfMeasures * piece.getBeatsPerMeasure()
+
+    followerFirstHalfDuration = getOffset(piece, follower[followerFirstHalf - 1]) + follower[followerFirstHalf - 1].duration.quarterLength - getOffset(piece, follower[0])
+    followerSecondHalfDuration = getOffset(piece, follower[-1]) - getOffset(piece, follower[followerFirstHalf])
+
+    return {
+        'leader': leader,
+        'follower': follower,
+        'leaderCounts': [leaderFirstHalf, leaderSecondHalf],
+        'followerCounts': [followerFirstHalf, followerSecondHalf],
+        'followerDuration': [followerFirstHalfDuration, followerSecondHalfDuration],
+        'followerLag': [followerFirstHalfLag, followerSecondHalfLag],
+        'leaderOffsets': leaderOffsets
+    }
+
+
+def getLeaderNote(piece, leaderFollowerInfo, offset):
+    lag = getOffset(piece, leaderFollowerInfo['follower'][0]) - getOffset(piece, leaderFollowerInfo['leader'][0])
+
+    leaderOffset = offset - lag
+
+    if leaderOffset in leaderFollowerInfo['leaderOffsets']:
+        return leaderFollowerInfo['leaderOffsets'][leaderOffset]
+
+    lastNote = None
+
+    for (thisOffset, note) in sorted(leaderFollowerInfo['leaderOffsets'].items()):
+        if leaderOffset >= thisOffset and leaderOffset <= (thisOffset + note.duration.quarterLength):
+            return note
+
+        if thisOffset > leaderOffset:
+            return lastNote
+
+        lastNote = note
+
+    return None
+
+
+def handleLeader(movement, piece, leaderFollowerInfo):
+    leader = leaderFollowerInfo['leader']
+
+    toRemove = []
+
+    halfMeasure = movement.measures / 2
+    beatsPerMeasure = piece.getBeatsPerMeasure()
+
+    for i in range(0, len(leader)):
+        if i > leaderFollowerInfo['followerCounts'][0] and i <= leaderFollowerInfo['leaderCounts'][0]:
+            measure, beat = getMeasureBeat(piece, getOffset(piece, leader[i]))
+
+            if measure <= halfMeasure:
+                # leader[i].style.color = '#B0E0E6'
+                leader[i].style.color = 'gray'
+                toRemove.append(i)
+                continue
+            else:
+                print()
+
+        leaderNote = leader[i]
+        leaderOffset = getOffset(piece, leaderNote)
+        if leaderOffset > ((movement.measures * beatsPerMeasure) - leaderFollowerInfo['followerLag'][1] - 1):
+            leaderNote.style.color = 'gray'
+            toRemove.append(i)
+            continue
+
+        leader[i].style.color = LEADER_COLOR
+
+    toRemove.reverse()
+    for i in toRemove:
+        del leader[i]
+
+
+def handleCanonWalk(movement, piece):
+    if movement.canonVoices is None or len(movement.canonVoices) == 0:
+        return
+
+    leaderFollowerInfo = getLeaderFollowerInfo(movement, piece)
+    handleLeader(movement, piece, leaderFollowerInfo)
+
+    leader = leaderFollowerInfo['leader']
+    follower = leaderFollowerInfo['follower']
+
+    myShow(piece.stream.parts[0].measure(1).timeSignature, leader, "leader for " + movement.name)
+    myShow(piece.stream.parts[0].measure(1).timeSignature, follower, "follower for " + movement.name)
+
+    canonOffset = movement.canonOffsetSteps
+
+    greenFollowers = 0
+    redFollowers = 0
+
+    for i in range(0, len(follower)):
+        followerNote = follower[i]
+        leaderNote = getLeaderNote(piece, leaderFollowerInfo, getOffset(piece, followerNote))
+        if (MyNote.getNoteOrdinal(followerNote) - MyNote.getNoteOrdinal(leaderNote)) == canonOffset:
+            follower[i].style.color = FOLLOWER_COLOR
+            greenFollowers += 1
+        else:
+            follower[i].style.color = 'red'
+            redFollowers += 1
+            follower[i].addLyric(
+                f'{MyNote.getNoteOrdinal(follower[i])}-{MyNote.getNoteOrdinal(leaderNote)}-{MyNote.getNoteOrdinal(follower[i]) - MyNote.getNoteOrdinal(leaderNote)}'
+            )
+
+    print(f'{greenFollowers=}, {redFollowers=}')
+    handleWrite(piece, "canons-colored")
+
+
+def myShow(timeSignature, array, message=None):
+    stream = music21.stream.Stream()
+    stream.timeSignature = timeSignature
+
+    for note in array:
+        stream.append(note)
+
+    if message is not None:
+        stream.insert(0, metadata.Metadata())
+        stream.metadata.movementName = message
+
+    # stream.show()
+
+
+def handleWrite(piece, place, open=False):
+    myPiece = copy.deepcopy(piece)
+
+    path = myPiece.path.replace("musicxml-clean", f"musicxml-out/{place}")
+    fp = myPiece.stream.write("musicxml", fp=path)
+    print(f"{path} was written")
+
+    if open:
+        os.system(f'open "{path}" &')
+
+
+def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=None, canonWalk=False,
+                  withInsights=False, writeBlack=False, shouldColorFiguredBass=False, shouldColorParts=False, generateStats=False, compose=False):
+    chormaticIndex = {}
+    scalarIndex = {}
+
+    matchedMovements = []
     pieces = []
     for file in getPaths(directory):
         path = directory + "/" + file
@@ -948,58 +1264,70 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
         #     voiceNoteArray.show()
 
         if withInsights:
-            indexDeltas(index, piece)
+            indexDeltas(chormaticIndex, scalarIndex, piece)
 
+        matchedMovements.append(movement)
         pieces.append(piece)
 
         if movementLimit != None and len(pieces) >= movementLimit:
             break
 
-    trimIndex(index)
+    trimIndex(chormaticIndex)
 
     for piece in pieces:
         if writeBlack:
-            path = piece.path.replace("musicxml-clean", "musicxml-out/black")
-            fp = piece.stream.write("musicxml", fp=path)
+            handleWrite(piece, "black")
+
+    for piece in pieces:
+        myPiece = copy.deepcopy(piece)
+
+        if compose:
+            letsCompose(myPiece)
+
+            path = myPiece.path.replace("musicxml-clean", "musicxml-out/composed").replace(".musicxml", datetime.now().strftime(" %Y-%m-%d-%H-%M-%S") + ".musicxml")
+            fp = myPiece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
     for piece in pieces:
+        myPiece = copy.deepcopy(piece)
+
         if shouldColorFiguredBass:
-            colorFiguredBass(piece)
-            piece.backInBlack()
-            path = piece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
-            fp = piece.stream.write("musicxml", fp=path)
+            colorFiguredBass(myPiece)
+            # myPiece.backInBlack()
+            path = myPiece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
+            fp = myPiece.stream.write("musicxml", fp=path)
+            path = path.replace('.musicxml', '.xml')
+            os.system(f'open "{path}" &')
             print(f"{path} was written")
 
     for piece in pieces:
+        myPiece = copy.deepcopy(piece)
+
         if shouldColorParts:
-            colorParts(piece)
-            path = piece.path.replace("musicxml-clean", "musicxml-out/colored-parts")
-            fp = piece.stream.write("musicxml", fp=path)
-            print(f"{path} was written")
+            colorParts(myPiece)
+            handleWrite(myPiece, "colored-parts")
 
     for piece in pieces:
+        myPiece = copy.deepcopy(myPiece)
+
         if shouldColorFiguredBass and shouldColorParts:
             colorFiguredBass(piece)
-            path = piece.path.replace("musicxml-clean", "musicxml-out/colored-parts-and-figured-bass")
-            fp = piece.stream.write("musicxml", fp=path)
+            path = myPiece.path.replace("musicxml-clean", "musicxml-out/colored-parts-and-figured-bass")
+            fp = myPiece.stream.write("musicxml", fp=path)
+            path = path.replace('.musicxml', '.xml')
+            os.system(f'open "{path}" &')
             print(f"{path} was written")
 
-    for piece in pieces:
-        if withInsights:
-            if shouldColorFiguredBass or shouldColorParts:
-                piece.backInBlack()
+    if canonWalk:
+        for i in range(0, len(pieces)):
+            movement = matchedMovements[i]
 
-            printDeltas(piece)
-            # try:
-            handleDeltas(piece, index)
-            # except:
-            #     print("An exception occurred")
+            if movement.canonVoices is None or len(movement.canonVoices) == 0:
+                continue
 
-            path = piece.path.replace("musicxml-clean", "musicxml-out/insightful")
-            fp = piece.stream.write("musicxml", fp=path)
-            print(f"{path} was written")
+            myPiece = copy.deepcopy(pieces[i])
 
+            handleCanonWalk(movement, myPiece)
         # versions
         # all black
         # all black - gold figured bass
@@ -1013,11 +1341,20 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
             json.dump(STATS, statsFile, indent=4)
 
 
-generateGenericStats('/Users/earlcahill/music-video-experiments/transcendental_etude_no_10/transcendental_etude_no_10.musicxml')
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-out/black")
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 13")
+# generateGenericStats('/Users/earlcahill/music-video-experiments/transcendental_etude_no_10/transcendental_etude_no_10.musicxml')
+# generateGenericStats('/Users/earlcahill/music-video-experiments/transcendental_etude_no_10/transcendental_etude_no_10.musicxml')
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=["Variation 1"], writeBlack=True, shouldColorParts=True)
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=["Aria"], generateStats=True)
+# generateGenericStats('/Users/earlcahill/music-video-experiments/goldbergs/01-Aria/01-Aria.musicxml')
+
+walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 3", withInsights=False, writeBlack=False,
+              shouldColorFiguredBass=False, shouldColorParts=False, canonWalk=True)
+
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Aria", canonWalk=False, withInsights=False, writeBlack=True,
+#               shouldColorFiguredBass=False, shouldColorParts=False, compose=False)
+
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movementLimit=1, generateStats=True)
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=['Variation 1'], generateStats=True)
+# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", shouldColorFiguredBass=True)
 # walkDirectory("/Users/earlcahill/Downloads", movements=['feux follets'], generateStats=True)
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", withInsights=True, writeBlack=True, shouldColorFiguredBass=True,
 #               shouldColorParts=True)

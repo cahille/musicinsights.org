@@ -1,6 +1,3 @@
-import music21
-
-
 class Piece:
     deltas = None
     path = None
@@ -30,7 +27,9 @@ class Piece:
 
     def getDeltas(self, voiceIndex):
         if voiceIndex not in self.deltas:
-            self.deltas[voiceIndex] = []
+            self.deltas[voiceIndex] = {}
+            self.deltas[voiceIndex]['chromatic'] = []
+            self.deltas[voiceIndex]['scalar'] = []
 
         return self.deltas[voiceIndex]
 
@@ -45,6 +44,9 @@ class Piece:
             self.voiceNoteArrays[voiceIndex] = []
 
         return self.voiceNoteArrays[voiceIndex]
+
+    def getBeatsPerMeasure(self):
+        return self.getNumerator() * 4 / self.getDenominator()
 
     def getNumerator(self):
         return self.stream.flat.timeSignature.numerator
