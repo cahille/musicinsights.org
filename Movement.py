@@ -1,12 +1,12 @@
 class Movement:
-    def __init__(self, name, measures, voltaRepeats, partVoiceMap, beatsPath=None, partOffsetMap={}, canonVoices=None, canonOffsetSteps=None, canonInverted=None):
+    def __init__(self, name, measures, voltaRepeats, partVoiceMap, beatsPath=None, partOffsetMap={}, canonVoices=None, canonOffsetPositions=None, canonInverted=None):
         self.name = name
         self.measures = measures
         self.voltaRepeats = voltaRepeats
         self.partVoiceMap = partVoiceMap
         self.partOffsetMap = partOffsetMap
         self.canonVoices = canonVoices
-        self.canonOffsetSteps = canonOffsetSteps
+        self.canonOffsetPositions = canonOffsetPositions
         self.canonInverted = canonInverted
 
         if beatsPath != None:

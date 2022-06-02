@@ -15,6 +15,7 @@ from music21.exceptions21 import Music21Exception
 
 from Delta import Delta
 from Movement import Movement
+from MusicHelper import MusicHelper
 from MyNote import MyNote
 from Piece import Piece
 
@@ -95,26 +96,24 @@ MOVEMENTS = [
             3: [[69, 69]],
             4: [[84, 95]]},
         5: {2: [[2, 2], [18.5, 20.75], [27, 27], [46, 47.5], [54.5, 56.5], [78, 79]],
-            3: [],
             4: [[21, 24], [30, 35.5], [42, 42], [52, 52], [48, 53], [57, 75], [81, 83.5]]},
-        6: {3: [[68.5, 68.5]]}
+        6: {3: [[1, 1], [68.5, 68.5]]}
     }),
     # Movement('Variation 1', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 2}, '/Users/earlcahill/Desktop/movies/sync fun/02-variation 1.beats'),
     Movement('Variation 1', 32, False, {
-        1: 1, 2: 1, 3: 4, 4: 4, 5: 4, 6: 4
+        1: 1, 2: 4, 3: 4
     }),
-    Movement('Variation 2', 32, True, {1: 1, 2: 2, 3: 3, 4: 3}),
-    Movement('Variation 3', 16, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[1, 2], canonOffsetSteps=0),
-    Movement('Variation 4', 32, True, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 3, 7: 4}),
-    Movement('Variation 5', 32, False, {1: 1, 2: 2, 3: 2}),
-    Movement('Variation 6', 32, True, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3, 6: 3, 7: 3, 8: 3}, partOffsetMap={
-        3: {1: [[33, 34.25]]},
-        5: {2: [[9, 11.75], [21, 22.5], [24, 24], [25.5, 25.5]]},
-        7: {2: [[12, 12]]}
-    }, canonVoices=[2, 1], canonOffsetSteps=2),
+    Movement('Variation 2', 32, True, {1: 1, 2: 2, 3: 4, 4: 4}),
+    Movement('Variation 3', 16, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[1, 2], canonOffsetPositions=0),
+    Movement('Variation 4', 32, True, {1: 1, 2: 2, 3: 3, 4: 4, 5: 4}, partOffsetMap={
+        3: {3: [[22.5, 22.5], [49, 49.5]]},
+        4: {3: [[7.5, 8.5], [15, 17.5], [25.5, 25.5], [51, 51]]}
+    }),
+    Movement('Variation 5', 32, False, {1: 1, 2: 4, 3: 4}),
+    Movement('Variation 6', 32, True, {1: 1, 2: 2, 3: 3, 4: 3}, partOffsetMap={}, canonVoices=[2, 1], canonOffsetPositions=1),
     Movement('Variation 7', 32, False, {1: 1, 2: 2}),
     Movement('Variation 8', 32, False, {1: 1, 2: 2}),
-    Movement('Variation 9', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}, canonVoices=[1, 2], canonOffsetSteps=-4),
+    Movement('Variation 9', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}, canonVoices=[1, 2], canonOffsetPositions=-2),
     Movement('Variation 10', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4, 7: 4}, partOffsetMap={
         3: {3: [[16, 38], [44, 62], [112, 126]]},
         4: {3: [[24, 27], [32, 34], [40, 42]]}
@@ -122,8 +121,8 @@ MOVEMENTS = [
     Movement('Variation 11', 32, False, {1: 1, 2: 2, 3: 2, 4: 2}),
     Movement('Variation 12', 32, False, {1: 1, 2: 2, 3: 2, 4: 2, 5: 3, 6: 3, 7: 3}, partOffsetMap={
         4: {3: [[39, 42], [45, 47], [60.5, 83.75]]},
-        5: {2: [[8, 10.5]]}
-    }, canonVoices=[1, 2], canonOffsetSteps=-5, canonInverted=True),
+        5: {2: [[9.5, 10.25]]},
+    }, canonVoices=[1, 2], canonOffsetPositions=-3, canonInverted=True),
     Movement('Variation 13', 32, False, {1: 1, 2: 2, 3: 2, 4: 4, 5: 4, 6: 4}, partOffsetMap={
         4: {2: [[13, 13]]}
     }),
@@ -131,13 +130,13 @@ MOVEMENTS = [
     Movement('Variation 15', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}, partOffsetMap={
         # 4: {2: [[4, 7.25], [12, 13.875], [24.5, 27.25], [28.5, 29.75], [52, 53.5], [60, 62]]},
         # 5: {2: [[14, 14], [54, 54.5]]}
-    }, canonVoices=[1, 2], canonOffsetSteps=-7, canonInverted=True),  # G, A-flat, A, B-flat, B, C, C-sharp, D
+    }, canonVoices=[1, 2], canonOffsetPositions=-7, canonInverted=True),  # G, A-flat, A, B-flat, B, C, C-sharp, D
     Movement('Variation 16', 48, True, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4, 6: 4}, partOffsetMap={
         3: {3: [[117.5, 117.5]]},
         4: {3: [[0, 0], [3.75, 4], [53.75, 54]]}
     }),
     Movement('Variation 17', 32, False, {1: 1, 2: 2}),
-    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[2, 1], canonOffsetSteps=8, canonInverted=True),
+    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[2, 1], canonOffsetPositions=8, canonInverted=True),
     # G, A-flat, A, B-flat, B, C, C-sharp, D),  # B, C, C-sharp, D, D-sharp, E, F, F-sharp, G
     Movement('Variation 19', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}, partOffsetMap={
         4: {2: [[24, 24.5], [42, 47]]},
@@ -147,7 +146,7 @@ MOVEMENTS = [
     Movement('Variation 21', 16, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3, 7: 3}, partOffsetMap={
         4: {2: [[0, 7.5], [20, 23.5], [60.75, 62]]},
         5: {2: [[43, 45], [48.25, 49.75]]},
-    }, canonOffsetSteps=11),  # B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, A-flat, A
+    }, canonOffsetPositions=11),  # B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, A-flat, A
     Movement('Variation 22', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4}, partOffsetMap={
         # 3: {3: [[34, 44], [50, 60], [78, 92], [98, 104], [112, 112]],
         #     4: [[68, 75], [96, 103]]},
@@ -166,10 +165,10 @@ MOVEMENTS = [
         4: {2: [[9, 13], [45, 51], [63, 66], [63, 95.5], [117, 121], [126.5, 143]]},
         5: {2: [[13.5, 13.5], [14.5, 14.5], [54, 56.5], [67.5, 67.5], [122, 124.5]]},
         6: {4: [[54, 58]]}
-    }),
+    }, canonOffsetPositions=12),  # not really on canonOffsetPositions
     Movement('Variation 25', 32, True, {1: 1, 2: 3, 3: 4, 4: 3, 5: 4}),
     # Movement('Variation 26', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
-    Movement('Variation 27', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}, canonOffsetSteps=14),  # G, A-flat, A, B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, G-flat, A
+    Movement('Variation 27', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}, canonOffsetPositions=14),  # G, A-flat, A, B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, G-flat, A
     Movement('Variation 28', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 4}, partOffsetMap={
         3: {3: [[18.125, 23.875], [36.125, 44.875], [60.125, 68.875], [36.125, 44.875], [60.125, 68.875], [72.125, 77.875]]},
         4: {4: [[18, 77]]},
@@ -188,7 +187,6 @@ VOICE_COLOR = {
     3: COLORS[2],
     4: COLORS[3],
 }
-
 
 def getVoiceIndex(movement, part, totalOffset):
     if part in movement.partOffsetMap:
@@ -674,7 +672,7 @@ def handlePartsVoices(piece, generateStats=False):
 
             part.insert(0, metadata.Metadata())
             part.metadata.movementName = f"{part.id=}, {partNumber=}"
-            # part.show()
+            part.show()
 
             for note in part.recurse():
                 if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
@@ -1069,6 +1067,7 @@ def getLeaderFollowerInfo(movement, piece):
     followerFirstHalfLag = None
     followerSecondHalfLag = None
     leaderOffsets = {}
+    leaderInitialSecondHalfOffset = None
 
     halfMeasures = movement.measures / 2
 
@@ -1081,6 +1080,8 @@ def getLeaderFollowerInfo(movement, piece):
             leaderFirstHalf += 1
         else:
             leaderSecondHalf += 1
+            if not leaderInitialSecondHalfOffset:
+                leaderInitialSecondHalfOffset = leaderOffset
 
     for i in range(0, len(follower)):
         followerNote = follower[i]
@@ -1094,7 +1095,7 @@ def getLeaderFollowerInfo(movement, piece):
         else:
             followerSecondHalf += 1
             if followerSecondHalfLag == None:
-                followerSecondHalfLag = getOffset(piece, followerNote) - halfMeasures * piece.getBeatsPerMeasure()
+                followerSecondHalfLag = getOffset(piece, followerNote) - leaderInitialSecondHalfOffset
 
     followerFirstHalfDuration = getOffset(piece, follower[followerFirstHalf - 1]) + follower[followerFirstHalf - 1].duration.quarterLength - getOffset(piece, follower[0])
     followerSecondHalfDuration = getOffset(piece, follower[-1]) - getOffset(piece, follower[followerFirstHalf])
@@ -1111,7 +1112,10 @@ def getLeaderFollowerInfo(movement, piece):
 
 
 def getLeaderNote(piece, leaderFollowerInfo, offset):
-    lag = getOffset(piece, leaderFollowerInfo['follower'][0]) - getOffset(piece, leaderFollowerInfo['leader'][0])
+    if offset < piece.movement.measures / 2 * piece.getBeatsPerMeasure():
+        lag = getOffset(piece, leaderFollowerInfo['follower'][0]) - getOffset(piece, leaderFollowerInfo['leader'][0])
+    else:
+        lag = leaderFollowerInfo['followerLag'][1]
 
     leaderOffset = offset - lag
 
@@ -1179,7 +1183,8 @@ def handleCanonWalk(movement, piece):
     myShow(piece.stream.parts[0].measure(1).timeSignature, leader, "leader for " + movement.name)
     myShow(piece.stream.parts[0].measure(1).timeSignature, follower, "follower for " + movement.name)
 
-    canonOffset = movement.canonOffsetSteps
+    canonOffsetPositions = movement.canonOffsetPositions
+    inverted = movement.canonInverted if movement.canonInverted else False
 
     greenFollowers = 0
     redFollowers = 0
@@ -1187,15 +1192,62 @@ def handleCanonWalk(movement, piece):
     for i in range(0, len(follower)):
         followerNote = follower[i]
         leaderNote = getLeaderNote(piece, leaderFollowerInfo, getOffset(piece, followerNote))
-        if (MyNote.getNoteOrdinal(followerNote) - MyNote.getNoteOrdinal(leaderNote)) == canonOffset:
+        predictedOrdinal = None
+
+        sharpLeaderNote = None
+        naturalLeaderNote = None
+        flatLeaderNote = None
+        predictorNote = None
+
+        if leaderNote:
+            if leaderNote.name != 'F#' and leaderNote.pitch.accidental:
+                if leaderNote.pitch.accidental.name == 'sharp':
+                    sharpLeaderNote = True
+                elif leaderNote.pitch.accidental.name == 'natural':
+                    naturalLeaderNote = True
+                elif leaderNote.pitch.accidental.name == 'flat':
+                    flatLeaderNote = True
+                else:
+                    leaderNote
+
+            if sharpLeaderNote:
+                predictorNote = music21.note.Note(MyNote.getNoteWithOctave(MyNote.getNoteOrdinal(leaderNote) - 1))
+            elif naturalLeaderNote:
+                predictorNote = music21.note.Note(MyNote.getNoteWithOctave(MyNote.getNoteOrdinal(leaderNote) + 1))
+            else:
+                predictorNote = leaderNote
+
+            if inverted:
+                thisDiff = MusicHelper.keyNoteDiff(key.Key('G'), music21.note.Note(MyNote.getNoteWithOctave(47)), predictorNote)
+                if thisDiff is not None:
+                    thisDiff *= -1
+                    thisOrdinal = MusicHelper.shiftNote(key.Key('G'), music21.note.Note(MyNote.getNoteWithOctave(47)), canonOffsetPositions)
+                    if thisOrdinal:
+                        shiftedNote = music21.note.Note(MyNote.getNoteWithOctave(thisOrdinal))
+                        predictedOrdinal = MusicHelper.shiftNote(key.Key('G'), shiftedNote, thisDiff)
+
+            else:
+                predictedOrdinal = MusicHelper.shiftNote(key.Key('G'), predictorNote, canonOffsetPositions)
+        if not predictedOrdinal:
+            follower[i].style.color = 'red'
+            redFollowers += 1
+            follower[i].addLyric('?')
+            continue
+        else:
+            if sharpLeaderNote:
+                predictedOrdinal += 1
+            elif naturalLeaderNote or flatLeaderNote:
+                predictedOrdinal -= 1
+
+            predictedOrdinal
+
+        if MyNote.getNoteOrdinal(followerNote) == predictedOrdinal:
             follower[i].style.color = FOLLOWER_COLOR
             greenFollowers += 1
         else:
             follower[i].style.color = 'red'
             redFollowers += 1
-            follower[i].addLyric(
-                f'{MyNote.getNoteOrdinal(follower[i])}-{MyNote.getNoteOrdinal(leaderNote)}-{MyNote.getNoteOrdinal(follower[i]) - MyNote.getNoteOrdinal(leaderNote)}'
-            )
+            follower[i].addLyric('X')
 
     print(f'{greenFollowers=}, {redFollowers=}')
     handleWrite(piece, "canons-colored")
@@ -1347,8 +1399,8 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=["Aria"], generateStats=True)
 # generateGenericStats('/Users/earlcahill/music-video-experiments/goldbergs/01-Aria/01-Aria.musicxml')
 
-walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 3", withInsights=False, writeBlack=False,
-              shouldColorFiguredBass=False, shouldColorParts=False, canonWalk=True)
+walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 10", withInsights=False, writeBlack=True,
+              shouldColorFiguredBass=False, shouldColorParts=True, canonWalk=True)
 
 # walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Aria", canonWalk=False, withInsights=False, writeBlack=True,
 #               shouldColorFiguredBass=False, shouldColorParts=False, compose=False)
