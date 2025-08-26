@@ -81,12 +81,14 @@ COMPOSE_OFFSETS = [
 music21.environment.set("musescoreDirectPNGPath", "/Applications/MuseScore 3.app")
 music21.environment.set("musicxmlPath", "/Applications/MuseScore 3.app")
 music21.environment.set(
-    "lilypondPath", "/Applications/LilyPond.app/Contents/Resources/bin/lilypond"
+    "lilypondPath", "~/code/lilypond-2.24.4/bin/lilypond"
 )
 
 FIGURED_BASS_MEASURE_NOTE = {
-    1: "G", 2: "F#", 3: "E", 4: "D", 5: "B", 6: "C", 7: "D", 8: "G", 9: "G", 10: "F#", 11: "E", 12: "A", 13: "F#", 14: "G", 15: "A", 16: "D",
-    17: "D", 18: "B", 19: "C", 20: "B", 21: "G", 22: "A", 23: "D", 24: "C", 25: "C", 26: "B", 27: "A", 28: "D", 29: "G", 30: "C", 31: "D", 32: "G",
+    1: "G", 2: "F#", 3: "E", 4: "D", 5: "B", 6: "C", 7: "D", 8: "G", 9: "G", 10: "F#", 11: "E", 12: "A", 13: "F#",
+    14: "G", 15: "A", 16: "D",
+    17: "D", 18: "B", 19: "C", 20: "B", 21: "G", 22: "A", 23: "D", 24: "C", 25: "C", 26: "B", 27: "A", 28: "D", 29: "G",
+    30: "C", 31: "D", 32: "G",
 }
 MINIMUM_SNIPPET_LENGTH = 10
 COLORS = ['blue', 'green', 'orange', 'purple', 'gray', 'yellow', 'white']
@@ -110,7 +112,8 @@ MOVEMENTS = [
         4: {3: [[7.5, 8.5], [15, 17.5], [25.5, 25.5], [51, 51]]}
     }),
     Movement('Variation 5', 32, False, {1: 1, 2: 4, 3: 4}),
-    Movement('Variation 6', 32, True, {1: 1, 2: 2, 3: 3, 4: 3}, partOffsetMap={}, canonVoices=[2, 1], canonOffsetPositions=1),
+    Movement('Variation 6', 32, True, {1: 1, 2: 2, 3: 3, 4: 3}, partOffsetMap={}, canonVoices=[2, 1],
+             canonOffsetPositions=1),
     Movement('Variation 7', 32, False, {1: 1, 2: 2}),
     Movement('Variation 8', 32, False, {1: 1, 2: 2}),
     Movement('Variation 9', 16, False, {1: 1, 2: 2, 3: 3, 4: 3}, canonVoices=[1, 2], canonOffsetPositions=-2),
@@ -136,7 +139,8 @@ MOVEMENTS = [
         4: {3: [[0, 0], [3.75, 4], [53.75, 54]]}
     }),
     Movement('Variation 17', 32, False, {1: 1, 2: 2}),
-    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[2, 1], canonOffsetPositions=8, canonInverted=True),
+    Movement('Variation 18', 32, False, {1: 1, 2: 2, 3: 3, 4: 3, 5: 3}, canonVoices=[2, 1], canonOffsetPositions=8,
+             canonInverted=True),
     # G, A-flat, A, B-flat, B, C, C-sharp, D),  # B, C, C-sharp, D, D-sharp, E, F, F-sharp, G
     Movement('Variation 19', 32, False, {1: 1, 2: 2, 3: 2, 4: 3, 5: 3, 6: 3}, partOffsetMap={
         4: {2: [[24, 24.5], [42, 47]]},
@@ -168,9 +172,11 @@ MOVEMENTS = [
     }, canonOffsetPositions=12),  # not really on canonOffsetPositions
     Movement('Variation 25', 32, True, {1: 1, 2: 3, 3: 4, 4: 3, 5: 4}),
     # Movement('Variation 26', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}),
-    Movement('Variation 27', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}, canonOffsetPositions=14),  # G, A-flat, A, B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, G-flat, A
+    Movement('Variation 27', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 3, 6: 4}, canonOffsetPositions=14),
+    # G, A-flat, A, B-flat, B, C, D-flat, D, E-flat, E, F, G-flat, G, G-flat, A
     Movement('Variation 28', 32, False, {1: 1, 2: 2, 3: 4, 4: 3, 5: 4}, partOffsetMap={
-        3: {3: [[18.125, 23.875], [36.125, 44.875], [60.125, 68.875], [36.125, 44.875], [60.125, 68.875], [72.125, 77.875]]},
+        3: {3: [[18.125, 23.875], [36.125, 44.875], [60.125, 68.875], [36.125, 44.875], [60.125, 68.875],
+                [72.125, 77.875]]},
         4: {4: [[18, 77]]},
     }),
     Movement('Variation 29', 32, False, {1: 1, 2: 2, 3: 4, 4: 4, 5: 4}, partOffsetMap={
@@ -187,6 +193,7 @@ VOICE_COLOR = {
     3: COLORS[2],
     4: COLORS[3],
 }
+
 
 def getVoiceIndex(movement, part, totalOffset):
     if part in movement.partOffsetMap:
@@ -273,7 +280,8 @@ def beatInt(beat):
 
 def matchIncluded(matched, matchCandidate):
     for match in matched:
-        if matchCandidate['piece'].movement.name != match['piece'].movement.name or matchCandidate['voice'] != match['voice']:
+        if matchCandidate['piece'].movement.name != match['piece'].movement.name or matchCandidate['voice'] != match[
+            'voice']:
             continue
 
         if match['i'] <= matchCandidate['startingIndex'] and match['j'] >= matchCandidate['startingIndex']:
@@ -327,8 +335,10 @@ def handleDeltas(piece, index):
                             or (
                             (MyNote.getNoteOrdinal(mainNote) - MyNote.getNoteOrdinal(mainLastNote)) != (
                             MyNote.getNoteOrdinal(childNote) - MyNote.getNoteOrdinal(childLastNote))):
-                        matchCandidateOne = {'piece': main['piece'], 'voice': mainVoice, 'i': mainStartingLoopIndex, 'j': thisMainIndex - 1}
-                        matchCandidateTwo = {'piece': child['piece'], 'voice': child['voice'], 'i': child['startingIndex'], 'j': thisChildIndex - 1}
+                        matchCandidateOne = {'piece': main['piece'], 'voice': mainVoice, 'i': mainStartingLoopIndex,
+                                             'j': thisMainIndex - 1}
+                        matchCandidateTwo = {'piece': child['piece'], 'voice': child['voice'],
+                                             'i': child['startingIndex'], 'j': thisChildIndex - 1}
 
                         matched.append(matchCandidateOne)
                         matched.append(matchCandidateTwo)
@@ -375,7 +385,8 @@ def handleDeltas(piece, index):
 
                             if mainStartNote.lyric == None or not mainLyric in mainStartNote.lyric:
                                 if mainEndNote.articulations == None or (len(mainEndNote.articulations) == 0) or (
-                                        len(mainEndNote.articulations) > 0 and mainEndNote.articulations[0] == MARK_OUT):
+                                        len(mainEndNote.articulations) > 0 and mainEndNote.articulations[
+                                    0] == MARK_OUT):
                                     mainStartNote.articulations.append(MARK_IN)
                                 mainStartNote.addLyric(mainLyric)
 
@@ -392,7 +403,8 @@ def handleDeltas(piece, index):
 
                             if childStartNote.lyric == None or not childLyric in childStartNote.lyric:
                                 if childStartNote.articulations == None or (len(childStartNote.articulations) == 0) or (
-                                        len(childStartNote.articulations) > 0 and childStartNote.articulations[0] == MARK_OUT):
+                                        len(childStartNote.articulations) > 0 and childStartNote.articulations[
+                                    0] == MARK_OUT):
                                     childStartNote.articulations.append(MARK_IN)
                                 childStartNote.addLyric(childLyric)
 
@@ -400,7 +412,8 @@ def handleDeltas(piece, index):
                             if childEndNote.lyric == None or not childEndString in childEndNote.lyric:
                                 childEndNote.addLyric(childEndString)
                                 if childEndNote.articulations == None or (len(childEndNote.articulations) == 0) or (
-                                        len(childEndNote.articulations) > 0 and childEndNote.articulations[0] == MARK_IN):
+                                        len(childEndNote.articulations) > 0 and childEndNote.articulations[
+                                    0] == MARK_IN):
                                     childEndNote.articulations.append(MARK_OUT)
 
                         break
@@ -533,7 +546,7 @@ def hasNote(stream):
 
 
 def pathToMovement(path):
-    movementFilename = re.sub(".+[0-9]{2}\-|\.\w+$", "", path)
+    movementFilename = re.sub(".+[0-9]{2}-|\.\w+$", "", path)
     movementFilename = movementFilename.replace("_", " ")
 
     for thisMovement in MOVEMENTS:
@@ -550,7 +563,9 @@ def ingestFile(path):
     movement = pathToMovement(path)
 
     for element in thisStream.flat:
-        if "isNote" in dir(element) or "isRest" in dir(element) or isinstance(element, music21.text.TextBox) or isinstance(element, music21.expressions.TextExpression):
+        if "isNote" in dir(element) or "isRest" in dir(element) or isinstance(element,
+                                                                              music21.text.TextBox) or isinstance(
+            element, music21.expressions.TextExpression):
             continue
         if isinstance(element, music21.instrument.Instrument):
             thisStream.remove(element)
@@ -672,7 +687,7 @@ def handlePartsVoices(piece, generateStats=False):
 
             part.insert(0, metadata.Metadata())
             part.metadata.movementName = f"{part.id=}, {partNumber=}"
-            part.show()
+            # part.show()
 
             for note in part.recurse():
                 if "isRest" not in dir(note) and "isNote" not in dir(note) and "isChord" not in dir(note):
@@ -741,14 +756,16 @@ def handlePartsVoices(piece, generateStats=False):
                 if lastNote:
                     pieceDeltas['chromatic'].append(
                         Delta(
-                            myNote.noteOrdinal - pieceVoice[len(pieceVoice) - 2].noteOrdinal, lastNote, len(voiceArray), measure, beat
+                            myNote.noteOrdinal - pieceVoice[len(pieceVoice) - 2].noteOrdinal, lastNote, len(voiceArray),
+                            measure, beat
                         )
                     )
 
                 lastNote = note
 
     for voiceIndex in piece.voiceArrays:
-        myShow(piece.stream.parts[0].measure(1).timeSignature, piece.voiceArrays[voiceIndex], f"{piece.movement.name}: {voiceIndex}")
+        myShow(piece.stream.parts[0].measure(1).timeSignature, piece.voiceArrays[voiceIndex],
+               f"{piece.movement.name}: {voiceIndex}")
 
     if generateStats:
         for key in STATS:
@@ -914,7 +931,7 @@ def colorParts(piece):
 
 
 def colorFiguredBassNote(piece, voiceIndex, measure, note):
-    note.style.color = "gold"
+    note.style.color = "green"
 
     if measure not in piece.figuredBassReports['counts']:
         piece.figuredBassReports['counts'][measure] = {}
@@ -990,8 +1007,6 @@ def trimIndex(index):
 
     for snippet in index.keys():
         index[snippet].sort(key=lambda x: (x['voice'], x['startingIndex']))
-
-
 
 
 def formSyncedMidi(piece):
@@ -1097,7 +1112,8 @@ def getLeaderFollowerInfo(movement, piece):
             if followerSecondHalfLag == None:
                 followerSecondHalfLag = getOffset(piece, followerNote) - leaderInitialSecondHalfOffset
 
-    followerFirstHalfDuration = getOffset(piece, follower[followerFirstHalf - 1]) + follower[followerFirstHalf - 1].duration.quarterLength - getOffset(piece, follower[0])
+    followerFirstHalfDuration = getOffset(piece, follower[followerFirstHalf - 1]) + follower[
+        followerFirstHalf - 1].duration.quarterLength - getOffset(piece, follower[0])
     followerSecondHalfDuration = getOffset(piece, follower[-1]) - getOffset(piece, follower[followerFirstHalf])
 
     return {
@@ -1218,10 +1234,12 @@ def handleCanonWalk(movement, piece):
                 predictorNote = leaderNote
 
             if inverted:
-                thisDiff = MusicHelper.keyNoteDiff(key.Key('G'), music21.note.Note(MyNote.getNoteWithOctave(47)), predictorNote)
+                thisDiff = MusicHelper.keyNoteDiff(key.Key('G'), music21.note.Note(MyNote.getNoteWithOctave(47)),
+                                                   predictorNote)
                 if thisDiff is not None:
                     thisDiff *= -1
-                    thisOrdinal = MusicHelper.shiftNote(key.Key('G'), music21.note.Note(MyNote.getNoteWithOctave(47)), canonOffsetPositions)
+                    thisOrdinal = MusicHelper.shiftNote(key.Key('G'), music21.note.Note(MyNote.getNoteWithOctave(47)),
+                                                        canonOffsetPositions)
                     if thisOrdinal:
                         shiftedNote = music21.note.Note(MyNote.getNoteWithOctave(thisOrdinal))
                         predictedOrdinal = MusicHelper.shiftNote(key.Key('G'), shiftedNote, thisDiff)
@@ -1279,13 +1297,25 @@ def handleWrite(piece, place, open=False):
 
 
 def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=None, canonWalk=False,
-                  withInsights=False, writeBlack=False, shouldColorFiguredBass=False, shouldColorParts=False, generateStats=False, compose=False):
+                  withInsights=False, writeBlack=False, shouldColorFiguredBass=False, shouldColorParts=False,
+                  generateStats=False, compose=False, maxPrefixNumber=None):
     chormaticIndex = {}
     scalarIndex = {}
 
     matchedMovements = []
     pieces = []
     for file in getPaths(directory):
+        # Skip files with prefix number > maxPrefixNumber (if specified)
+        if maxPrefixNumber is not None:
+            try:
+                prefix_number = int(file.split('-')[0])
+                if prefix_number > maxPrefixNumber:
+                    print(f"Skipping {file} (prefix {prefix_number} > {maxPrefixNumber})")
+                    continue
+            except (ValueError, IndexError):
+                # If we can't parse the prefix as a number, continue processing
+                pass
+
         path = directory + "/" + file
         movement = pathToMovement(path)
 
@@ -1325,9 +1355,8 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
             break
 
     trimIndex(chormaticIndex)
-
-    for piece in pieces:
-        if writeBlack:
+    if writeBlack:
+        for piece in pieces:
             handleWrite(piece, "black")
 
     for piece in pieces:
@@ -1336,7 +1365,9 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
         if compose:
             letsCompose(myPiece)
 
-            path = myPiece.path.replace("musicxml-clean", "musicxml-out/composed").replace(".musicxml", datetime.now().strftime(" %Y-%m-%d-%H-%M-%S") + ".musicxml")
+            path = myPiece.path.replace("musicxml-clean", "musicxml-out/composed").replace(".musicxml",
+                                                                                           datetime.now().strftime(
+                                                                                               " %Y-%m-%d-%H-%M-%S") + ".musicxml")
             fp = myPiece.stream.write("musicxml", fp=path)
             print(f"{path} was written")
 
@@ -1349,7 +1380,7 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
             path = myPiece.path.replace("musicxml-clean", "musicxml-out/figured-bass")
             fp = myPiece.stream.write("musicxml", fp=path)
             path = path.replace('.musicxml', '.xml')
-            os.system(f'open "{path}" &')
+            # os.system(f'open "{path}" &')
             print(f"{path} was written")
 
     for piece in pieces:
@@ -1388,27 +1419,29 @@ def walkDirectory(directory, thisMovement=None, movementLimit=None, movements=No
         # colored voice - colored figured bass - with lyrics for patterns
 
     if generateStats:
-        # with open('/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations' + '/stats.json', 'w') as statsFile:
+        # with open('/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations' + '/stats.json', 'w') as statsFile:
         with open(directory + '/stats.json', 'w') as statsFile:
             json.dump(STATS, statsFile, indent=4)
 
 
 # generateGenericStats('/Users/earlcahill/music-video-experiments/transcendental_etude_no_10/transcendental_etude_no_10.musicxml')
 # generateGenericStats('/Users/earlcahill/music-video-experiments/transcendental_etude_no_10/transcendental_etude_no_10.musicxml')
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=["Variation 1"], writeBlack=True, shouldColorParts=True)
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=["Aria"], generateStats=True)
+# walkDirectory("/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=["Variation 1"], writeBlack=True, shouldColorParts=True)
+# walkDirectory("/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movements=["Aria"], generateStats=True)
 # generateGenericStats('/Users/earlcahill/music-video-experiments/goldbergs/01-Aria/01-Aria.musicxml')
 
-walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Variation 10", withInsights=False, writeBlack=True,
-              shouldColorFiguredBass=False, shouldColorParts=True, canonWalk=True)
+walkDirectory("/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations/musicxml-clean",
+              thisMovement="Variation 16", withInsights=False, writeBlack=False,
+              shouldColorFiguredBass=True, shouldColorParts=False, canonWalk=False,
+              maxPrefixNumber=16)
 
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Aria", canonWalk=False, withInsights=False, writeBlack=True,
+# walkDirectory("/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", "Aria", canonWalk=False, withInsights=False, writeBlack=True,
 #               shouldColorFiguredBass=False, shouldColorParts=False, compose=False)
 
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movementLimit=1, generateStats=True)
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", shouldColorFiguredBass=True)
+# walkDirectory("/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", movementLimit=1, generateStats=True)
+# walkDirectory("/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", shouldColorFiguredBass=True)
 # walkDirectory("/Users/earlcahill/Downloads", movements=['feux follets'], generateStats=True)
-# walkDirectory("/Users/earlcahill/dev/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", withInsights=True, writeBlack=True, shouldColorFiguredBass=True,
+# walkDirectory("/Users/earlcahill/code/musicinsights.org-corpus/GoldbergVariations/musicxml-clean", withInsights=True, writeBlack=True, shouldColorFiguredBass=True,
 #               shouldColorParts=True)
 
 
